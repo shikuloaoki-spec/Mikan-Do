@@ -1,0 +1,1445 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="供養アーカイブ — 没になったキャラクター設定・衣装案・活動名を供養し、ファンの投票で復活を目指すアーカイブ">
+<meta property="og:title" content="供養アーカイブ / Kuyo Archive">
+<meta property="og:description" content="没になったキャラクター設定たちの、安らかな眠りを。ファンの声があれば、いつかまた目覚めるかもしれない。">
+<title>供養アーカイブ / Kuyo Archive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;600&family=Shippori+Mincho:wght@400;500;700&family=DM+Serif+Display:ital@0;1&family=Crimson+Pro:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+
+<!-- Supabase JS SDK v2 -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+
+<style>
+/* ── Variables ─────────────────────────────────────────────── */
+:root {
+  --ink:#1a1410; --ink-light:#231a13; --paper:#f5f0e8; --smoke:#8a7d6b;
+  --ash:#b5a898; --ember:#c44a2a; --gold:#c9975a; --pale-gold:#e8c88a;
+  --deep:#2d1f12; --border:rgba(201,151,90,.18); --border-h:rgba(201,151,90,.45);
+  --font-jp:'Shippori Mincho','Noto Serif JP',serif;
+  --font-en:'DM Serif Display','Crimson Pro',serif;
+  --font-body:'Noto Serif JP','Crimson Pro',serif;
+  --tr:.28s cubic-bezier(.4,0,.2,1);
+}
+
+/* ── Reset ─────────────────────────────────────────────────── */
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;font-size:16px}
+body{background:var(--ink);color:var(--paper);font-family:var(--font-body);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none} button{cursor:pointer} input,textarea,select{font-family:inherit} img{max-width:100%;display:block}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--ink)}
+::-webkit-scrollbar-thumb{background:rgba(201,151,90,.25);border-radius:2px}
+::-webkit-scrollbar-thumb:hover{background:var(--gold)}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");pointer-events:none;z-index:9998;mix-blend-mode:overlay}
+
+/* ── Particles ─────────────────────────────────────────────── */
+#particles{position:fixed;inset:0;pointer-events:none;z-index:1;overflow:hidden}
+.particle{position:absolute;border-radius:50%;opacity:0;animation:particle-rise linear infinite}
+@keyframes particle-rise{0%{transform:translateY(100vh) translateX(0) scale(0);opacity:0}8%{opacity:.7}92%{opacity:.15}100%{transform:translateY(-40px) translateX(var(--d,0px)) scale(.2);opacity:0}}
+
+/* ── Auth Bar ──────────────────────────────────────────────── */
+#auth-bar{
+  display:flex;align-items:center;justify-content:flex-end;gap:10px;
+  padding:10px 20px;background:rgba(255,255,255,.015);
+  border-bottom:1px solid rgba(201,151,90,.1);
+  position:relative;z-index:100;
+}
+.auth-avatar{width:28px;height:28px;border-radius:50%;object-fit:cover;border:1px solid var(--border)}
+.auth-name{font-size:12px;color:var(--ash);letter-spacing:.04em}
+.auth-btn{
+  background:none;border:1px solid rgba(201,151,90,.3);
+  color:var(--gold);font-family:var(--font-body);
+  font-size:11px;letter-spacing:.12em;padding:5px 14px;
+  transition:all var(--tr);display:flex;align-items:center;gap:6px;
+}
+.auth-btn:hover{background:rgba(201,151,90,.08);border-color:var(--gold)}
+.auth-btn.logout{color:var(--smoke);border-color:rgba(138,125,107,.25)}
+.auth-btn.logout:hover{color:var(--ember);border-color:var(--ember)}
+.auth-status-dot{width:6px;height:6px;border-radius:50%;background:var(--smoke)}
+.auth-status-dot.online{background:#7ac49c}
+/* Loading skeleton */
+.auth-skeleton{width:80px;height:22px;background:rgba(201,151,90,.08);animation:skeleton-pulse 1.5s ease-in-out infinite}
+@keyframes skeleton-pulse{0%,100%{opacity:.4}50%{opacity:.9}}
+
+/* ── Header ────────────────────────────────────────────────── */
+#site-header{position:relative;text-align:center;padding:64px 20px 52px;z-index:10}
+.lang-switcher{position:absolute;top:20px;right:20px;display:flex;gap:6px;z-index:20}
+.lang-btn{background:none;border:1px solid rgba(201,151,90,.25);color:var(--smoke);font-family:var(--font-en);font-size:12px;letter-spacing:.08em;padding:4px 14px;transition:var(--tr)}
+.lang-btn:hover,.lang-btn.active{border-color:var(--gold);color:var(--gold)}
+.header-ornament{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:20px}
+.orn-line{height:1px;width:56px}
+.orn-l{background:linear-gradient(90deg,transparent,var(--gold))}
+.orn-r{background:linear-gradient(90deg,var(--gold),transparent)}
+.orn-dot{color:var(--gold);font-size:14px;opacity:.7}
+.site-title{font-family:var(--font-jp);font-size:clamp(34px,7vw,70px);font-weight:700;letter-spacing:.28em;line-height:1;animation:title-pulse 5s ease-in-out infinite alternate}
+@keyframes title-pulse{from{text-shadow:0 0 40px rgba(201,151,90,.18),0 2px 0 rgba(0,0,0,.5)}to{text-shadow:0 0 90px rgba(201,151,90,.45),0 2px 0 rgba(0,0,0,.5)}}
+.site-title-en{font-family:var(--font-en);font-style:italic;font-size:clamp(13px,2.2vw,20px);color:var(--gold);letter-spacing:.18em;margin-top:10px;opacity:.82}
+.site-tagline{font-family:var(--font-body);font-weight:300;font-size:clamp(10px,1.6vw,13px);color:var(--ash);letter-spacing:.28em;line-height:2.2;margin-top:18px}
+
+/* ── Stats ─────────────────────────────────────────────────── */
+.stats-bar{display:flex;justify-content:center;border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:rgba(255,255,255,.015)}
+.stat-item{flex:1;max-width:220px;text-align:center;padding:18px 12px;border-right:1px solid rgba(201,151,90,.1);transition:background var(--tr)}
+.stat-item:last-child{border-right:none}
+.stat-item:hover{background:rgba(201,151,90,.04)}
+.stat-number{font-family:var(--font-en);font-size:26px;color:var(--gold);line-height:1}
+.stat-label{font-family:var(--font-body);font-size:9px;color:var(--smoke);letter-spacing:.22em;margin-top:4px}
+
+/* ── Nav ───────────────────────────────────────────────────── */
+#main-nav{display:flex;justify-content:center;margin:36px auto 0;max-width:860px;border:1px solid var(--border);position:relative;z-index:10}
+.nav-btn{flex:1;background:none;border:none;color:var(--ash);font-family:var(--font-body);font-size:12px;letter-spacing:.14em;padding:15px 6px;border-right:1px solid rgba(201,151,90,.1);position:relative;overflow:hidden;transition:color var(--tr),background var(--tr)}
+.nav-btn:last-child{border-right:none}
+.nav-btn::after{content:'';position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:0;height:2px;background:var(--gold);transition:width var(--tr)}
+.nav-btn:hover,.nav-btn.active{color:var(--gold);background:rgba(201,151,90,.04)}
+.nav-btn:hover::after,.nav-btn.active::after{width:55%}
+
+/* ── Main ──────────────────────────────────────────────────── */
+#main-content{padding:52px 20px 120px;position:relative;z-index:10}
+
+/* ── Section header ────────────────────────────────────────── */
+.section-head{display:flex;align-items:baseline;gap:14px;margin-bottom:32px}
+.section-head-title{font-family:var(--font-jp);font-size:18px;color:var(--paper);letter-spacing:.2em;white-space:nowrap}
+.section-head-sub{font-family:var(--font-en);font-style:italic;color:var(--smoke);font-size:13px}
+.section-head-line{flex:1;height:1px;background:linear-gradient(90deg,var(--border),transparent)}
+
+/* ── Search ────────────────────────────────────────────────── */
+.search-wrap{position:relative;margin-bottom:20px}
+.search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--smoke);font-size:14px;pointer-events:none}
+#search-input{width:100%;background:rgba(255,255,255,.03);border:1px solid var(--border);color:var(--paper);font-family:var(--font-body);font-size:13px;letter-spacing:.05em;padding:12px 14px 12px 40px;outline:none;transition:border-color var(--tr),background var(--tr)}
+#search-input::placeholder{color:var(--smoke)}
+#search-input:focus{border-color:var(--gold);background:rgba(201,151,90,.04)}
+.search-clear{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--smoke);font-size:16px;display:none;line-height:1;transition:color var(--tr)}
+.search-clear:hover{color:var(--paper)}
+.search-clear.visible{display:block}
+
+/* ── Filters ───────────────────────────────────────────────── */
+.filter-bar{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:24px}
+.filter-chip{background:none;border:1px solid rgba(201,151,90,.2);color:var(--ash);font-family:var(--font-body);font-size:11px;letter-spacing:.1em;padding:6px 15px;transition:all var(--tr)}
+.filter-chip:hover,.filter-chip.active{background:rgba(201,151,90,.1);border-color:var(--gold);color:var(--pale-gold)}
+.sort-bar{display:flex;align-items:center;gap:12px;margin-bottom:24px}
+.sort-label{font-size:11px;color:var(--smoke);letter-spacing:.1em}
+.sort-btn{background:none;border:none;color:var(--ash);font-family:var(--font-body);font-size:11px;letter-spacing:.08em;padding:4px 0;border-bottom:1px solid transparent;transition:all var(--tr)}
+.sort-btn:hover,.sort-btn.active{color:var(--gold);border-bottom-color:var(--gold)}
+.results-info{font-size:11px;color:var(--smoke);letter-spacing:.08em;margin-bottom:16px;height:16px}
+
+/* ── Layout ────────────────────────────────────────────────── */
+.layout-grid{display:grid;grid-template-columns:1fr 268px;gap:36px;align-items:start;max-width:1200px;margin:0 auto}
+@media(max-width:900px){.layout-grid{grid-template-columns:1fr}.sidebar{display:none}}
+#cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1px;background:rgba(201,151,90,.08)}
+@media(max-width:600px){#cards-grid{grid-template-columns:1fr}}
+
+/* ── Card ──────────────────────────────────────────────────── */
+.botsu-card{background:var(--ink);padding:28px 24px;position:relative;transition:background var(--tr);overflow:hidden;cursor:pointer;display:flex;flex-direction:column}
+.botsu-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--ember),transparent);opacity:0;transition:opacity var(--tr)}
+.botsu-card:hover{background:rgba(201,151,90,.035)}
+.botsu-card:hover::before{opacity:1}
+.card-badge{display:inline-flex;align-items:center;gap:5px;font-family:var(--font-body);font-size:10px;letter-spacing:.14em;color:var(--smoke);border:1px solid rgba(138,125,107,.28);padding:3px 10px;margin-bottom:14px;width:fit-content}
+.badge-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.badge-dot.design{background:var(--ember)}.badge-dot.outfit{background:#7a9cc4}.badge-dot.name{background:#9c7ac4}.badge-dot.lore{background:var(--gold)}.badge-dot.bgm{background:#7ac49c}.badge-dot.other{background:var(--ash)}
+.card-thumb{width:100%;aspect-ratio:16/9;position:relative;overflow:hidden;margin-bottom:18px;flex-shrink:0;background:linear-gradient(135deg,rgba(201,151,90,.05),rgba(26,20,16,.9));border:1px solid rgba(201,151,90,.08)}
+.card-thumb img{width:100%;height:100%;object-fit:cover;opacity:.65;filter:sepia(15%);transition:opacity var(--tr),filter var(--tr)}
+.botsu-card:hover .card-thumb img{opacity:.82;filter:sepia(4%)}
+.card-thumb-kanji{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--font-jp);font-size:72px;font-weight:700;color:rgba(201,151,90,.07);user-select:none;transition:color var(--tr)}
+.botsu-card:hover .card-thumb-kanji{color:rgba(201,151,90,.11)}
+.card-title{font-family:var(--font-jp);font-size:17px;font-weight:700;color:var(--paper);letter-spacing:.08em;line-height:1.45;margin-bottom:10px}
+.card-creator{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.avatar{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--ink);flex-shrink:0}
+.avatar-sm{width:22px;height:22px;font-size:10px}
+.avatar-md{width:30px;height:30px;font-size:13px}
+.creator-name{font-size:12px;color:var(--ash);letter-spacing:.04em}
+.card-desc{font-size:12px;line-height:1.95;color:var(--ash);font-weight:300;margin-bottom:18px;flex:1;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.card-footer{display:flex;align-items:center;justify-content:space-between;margin-top:auto}
+.vote-btn{display:flex;align-items:center;gap:6px;background:none;border:1px solid rgba(201,151,90,.22);color:var(--ash);font-family:var(--font-body);font-size:11px;letter-spacing:.09em;padding:7px 14px;transition:all var(--tr);position:relative;overflow:hidden}
+.vote-btn::before{content:'';position:absolute;inset:0;background:rgba(196,74,42,.1);transform:translateX(-100%);transition:transform .35s ease}
+.vote-btn:hover::before,.vote-btn.voted::before{transform:translateX(0)}
+.vote-btn:hover,.vote-btn.voted{border-color:var(--ember);color:#e87a5a}
+.vote-num{font-family:var(--font-en);font-size:15px;color:var(--gold);transition:color var(--tr)}
+.vote-btn.voted .vote-num{color:#e87a5a}
+.card-date{font-size:10px;color:var(--smoke);letter-spacing:.04em}
+.card-hof{position:absolute;top:12px;right:-22px;background:var(--gold);color:var(--ink);font-family:var(--font-body);font-size:9px;font-weight:700;letter-spacing:.12em;padding:3px 28px;transform:rotate(35deg)}
+
+/* Card loading skeleton */
+.card-skeleton{background:var(--ink);padding:28px 24px}
+.skel-line{background:rgba(201,151,90,.07);border-radius:2px;margin-bottom:12px;animation:skeleton-pulse 1.5s ease-in-out infinite}
+.skel-thumb{width:100%;aspect-ratio:16/9;background:rgba(201,151,90,.06);margin-bottom:18px;animation:skeleton-pulse 1.5s ease-in-out infinite}
+
+/* ── Empty state ────────────────────────────────────────────── */
+.empty-state{grid-column:1/-1;text-align:center;padding:80px 24px;background:var(--ink)}
+.empty-kanji{font-family:var(--font-jp);font-size:72px;color:rgba(201,151,90,.08);margin-bottom:14px;line-height:1}
+.empty-text{font-size:12px;color:var(--smoke);letter-spacing:.2em;line-height:2}
+
+/* ── Sidebar ────────────────────────────────────────────────── */
+.sidebar{position:sticky;top:20px}
+.sidebar-block{border:1px solid var(--border);padding:22px;margin-bottom:20px;background:rgba(255,255,255,.012)}
+.sidebar-title{font-family:var(--font-jp);font-size:13px;color:var(--gold);letter-spacing:.2em;margin-bottom:18px;padding-bottom:11px;border-bottom:1px solid rgba(201,151,90,.13)}
+.rank-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid rgba(201,151,90,.07);cursor:pointer;transition:opacity var(--tr)}
+.rank-item:last-child{border-bottom:none;padding-bottom:0}
+.rank-item:hover{opacity:.68}
+.rank-num{font-family:var(--font-en);font-size:20px;color:rgba(201,151,90,.25);line-height:1;min-width:26px}
+.rank-num.gold{color:var(--gold)}.rank-num.silver{color:#a8a8b0}.rank-num.bronze{color:#b08060}
+.rank-info{flex:1;overflow:hidden}
+.rank-title-text{font-family:var(--font-jp);font-size:12px;color:var(--paper);letter-spacing:.04em;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rank-creator-text{font-size:10px;color:var(--smoke)}
+.rank-votes{font-family:var(--font-en);font-size:17px;color:var(--ember);align-self:center}
+.email-row{display:flex;gap:6px;margin-top:10px}
+.email-input{flex:1;background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--paper);font-size:12px;padding:8px 10px;outline:none;font-family:inherit;transition:border-color var(--tr)}
+.email-input:focus{border-color:var(--gold)}
+.email-btn{background:none;border:1px solid var(--border);color:var(--gold);font-family:var(--font-body);font-size:11px;letter-spacing:.1em;padding:8px 12px;transition:all var(--tr)}
+.email-btn:hover{border-color:var(--gold);background:rgba(201,151,90,.08)}
+
+/* ── Ranking page ───────────────────────────────────────────── */
+.ranking-page{max-width:860px;margin:0 auto}
+.ranking-hero{text-align:center;padding:32px 0 48px;border-bottom:1px solid var(--border);margin-bottom:40px}
+.ranking-hero-sub{font-family:var(--font-en);font-style:italic;font-size:14px;color:var(--ash);letter-spacing:.1em;margin-top:8px}
+.ranking-full-item{display:flex;gap:20px;padding:28px 12px;border-bottom:1px solid rgba(201,151,90,.08);cursor:pointer;transition:background var(--tr)}
+.ranking-full-item:hover{background:rgba(201,151,90,.03)}
+.ranking-full-num{font-family:var(--font-en);font-size:40px;color:rgba(201,151,90,.18);line-height:1;min-width:56px;text-align:right;align-self:center}
+.ranking-full-num.gold{color:var(--gold)}.ranking-full-num.silver{color:#a8a8b0}.ranking-full-num.bronze{color:#b08060}
+.ranking-full-thumb{width:90px;height:60px;flex-shrink:0;background:rgba(201,151,90,.05);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:var(--font-jp);font-size:22px;color:rgba(201,151,90,.15);overflow:hidden}
+.ranking-full-thumb img{width:100%;height:100%;object-fit:cover;opacity:.7}
+.ranking-full-info{flex:1}
+.ranking-full-title{font-family:var(--font-jp);font-size:18px;color:var(--paper);letter-spacing:.08em;margin-bottom:6px}
+.ranking-full-creator{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.ranking-full-desc{font-size:12px;color:var(--ash);line-height:1.8;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ranking-full-votes{font-family:var(--font-en);font-size:32px;color:var(--ember);align-self:center;flex-shrink:0;text-align:center;min-width:60px}
+.ranking-full-votes small{display:block;font-size:10px;color:var(--smoke);font-family:var(--font-body);letter-spacing:.1em;margin-top:2px}
+
+/* ── Post form ──────────────────────────────────────────────── */
+.post-page{max-width:660px;margin:0 auto}
+/* Auth gate */
+.auth-gate{text-align:center;padding:60px 20px;border:1px solid var(--border)}
+.auth-gate-icon{font-size:48px;margin-bottom:20px;opacity:.35}
+.auth-gate-title{font-family:var(--font-jp);font-size:22px;color:var(--paper);letter-spacing:.2em;margin-bottom:12px}
+.auth-gate-text{font-size:13px;color:var(--ash);line-height:2;margin-bottom:28px}
+.twitter-login-btn{display:inline-flex;align-items:center;gap:10px;background:none;border:1px solid var(--gold);color:var(--gold);font-family:var(--font-jp);font-size:14px;letter-spacing:.18em;padding:14px 32px;transition:all var(--tr);position:relative;overflow:hidden}
+.twitter-login-btn::before{content:'';position:absolute;inset:0;background:var(--gold);transform:translateX(-100%);transition:transform .38s ease;z-index:0}
+.twitter-login-btn:hover::before{transform:translateX(0)}
+.twitter-login-btn:hover{color:var(--ink)}
+.twitter-login-btn span{position:relative;z-index:1}
+.form-intro{text-align:center;margin-bottom:44px;padding-bottom:36px;border-bottom:1px solid var(--border)}
+.form-intro-title{font-family:var(--font-jp);font-size:26px;color:var(--paper);letter-spacing:.22em;margin-bottom:12px}
+.form-intro-text{font-size:13px;color:var(--ash);line-height:2.1;letter-spacing:.05em;font-weight:300}
+.form-progress{display:flex;align-items:center;gap:0;margin-bottom:40px}
+.progress-step{flex:1;text-align:center;position:relative}
+.progress-step::after{content:'';position:absolute;top:14px;left:calc(50% + 16px);right:calc(-50% + 16px);height:1px;background:var(--border)}
+.progress-step:last-child::after{display:none}
+.progress-dot{width:28px;height:28px;border-radius:50%;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;margin:0 auto 8px;font-family:var(--font-en);font-size:13px;color:var(--smoke);transition:all var(--tr);background:var(--ink);position:relative;z-index:1}
+.progress-step.active .progress-dot{border-color:var(--gold);color:var(--gold)}
+.progress-step.done .progress-dot{background:var(--gold);border-color:var(--gold);color:var(--ink)}
+.progress-label{font-size:10px;color:var(--smoke);letter-spacing:.1em}
+.progress-step.active .progress-label{color:var(--gold)}
+.form-panel{display:none}
+.form-panel.active{display:block;animation:panel-in .35s ease}
+@keyframes panel-in{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.form-group{margin-bottom:28px}
+.form-label{display:block;font-family:var(--font-body);font-size:11px;letter-spacing:.2em;color:var(--gold);margin-bottom:9px}
+.form-required{color:var(--ember);margin-left:3px}
+.form-hint{font-size:11px;color:var(--smoke);margin-top:5px;letter-spacing:.04em;line-height:1.6}
+.form-input,.form-textarea,.form-select{width:100%;background:rgba(255,255,255,.03);border:1px solid var(--border);color:var(--paper);font-family:var(--font-body);font-size:13px;padding:13px 15px;outline:none;appearance:none;transition:border-color var(--tr),background var(--tr)}
+.form-input::placeholder,.form-textarea::placeholder{color:var(--smoke);font-weight:300}
+.form-input:focus,.form-textarea:focus,.form-select:focus{border-color:var(--gold);background:rgba(201,151,90,.04)}
+.form-input.error,.form-textarea.error{border-color:var(--ember)}
+.form-error-msg{font-size:11px;color:var(--ember);margin-top:5px;letter-spacing:.04em;display:none}
+.form-error-msg.visible{display:block}
+.form-textarea{min-height:130px;resize:vertical;line-height:1.85}
+.char-counter{font-size:10px;color:var(--smoke);text-align:right;margin-top:4px;letter-spacing:.04em}
+.char-counter.warn{color:var(--ember)}
+.form-select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238a7d6b'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px;cursor:pointer}
+.form-select option{background:var(--deep)}
+.cat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}
+@media(max-width:480px){.cat-grid{grid-template-columns:1fr}}
+.cat-radio{display:none}
+.cat-label{display:flex;align-items:center;gap:10px;border:1px solid rgba(201,151,90,.18);padding:12px 15px;cursor:pointer;font-family:var(--font-body);font-size:12px;letter-spacing:.09em;color:var(--ash);transition:all var(--tr)}
+.cat-radio:checked+.cat-label{background:rgba(201,151,90,.1);border-color:var(--gold);color:var(--pale-gold)}
+.cat-label:hover{border-color:var(--border-h);color:var(--paper)}
+.tags-wrap{border:1px solid var(--border);padding:8px 10px;display:flex;flex-wrap:wrap;gap:6px;background:rgba(255,255,255,.03);min-height:48px;align-items:center;transition:border-color var(--tr);cursor:text}
+.tags-wrap:focus-within{border-color:var(--gold);background:rgba(201,151,90,.04)}
+.tag-pill{display:flex;align-items:center;gap:5px;background:rgba(201,151,90,.12);border:1px solid rgba(201,151,90,.3);font-family:var(--font-body);font-size:11px;letter-spacing:.06em;color:var(--pale-gold);padding:3px 9px}
+.tag-remove{background:none;border:none;color:var(--smoke);font-size:12px;line-height:1;padding:0;transition:color var(--tr)}
+.tag-remove:hover{color:var(--ember)}
+.tags-input{flex:1;min-width:100px;background:none;border:none;color:var(--paper);font-family:inherit;font-size:12px;outline:none;padding:2px 4px}
+.tags-input::placeholder{color:var(--smoke)}
+.upload-zone{border:1px dashed rgba(201,151,90,.28);padding:36px 20px;text-align:center;cursor:pointer;transition:all var(--tr);position:relative;overflow:hidden}
+.upload-zone:hover,.upload-zone.drag-over{border-color:var(--gold);background:rgba(201,151,90,.05)}
+.upload-zone.has-file{border-style:solid;border-color:var(--gold)}
+.upload-icon{font-size:28px;margin-bottom:10px;opacity:.45}
+.upload-text{font-size:12px;color:var(--ash);letter-spacing:.09em;line-height:1.7}
+.upload-preview{width:100%;max-height:200px;object-fit:contain;margin-top:12px;display:none;border:1px solid var(--border)}
+.upload-preview.visible{display:block}
+.upload-filename{font-size:11px;color:var(--gold);margin-top:8px;display:none}
+.upload-filename.visible{display:block}
+.form-nav{display:flex;gap:10px;margin-top:36px}
+.btn-prev,.btn-next,.btn-submit{font-family:var(--font-jp);font-size:14px;letter-spacing:.22em;padding:16px 0;border:1px solid;transition:all var(--tr);position:relative;overflow:hidden}
+.btn-prev{flex:0 0 120px;background:none;border-color:var(--border);color:var(--smoke)}
+.btn-prev:hover{border-color:var(--gold);color:var(--gold)}
+.btn-next,.btn-submit{flex:1}
+.btn-next{background:none;border-color:var(--gold);color:var(--gold)}
+.btn-submit{background:none;border-color:var(--gold);color:var(--gold)}
+.btn-next::before,.btn-submit::before{content:'';position:absolute;inset:0;background:var(--gold);transform:translateX(-100%);transition:transform .38s ease;z-index:0}
+.btn-next:hover::before,.btn-submit:hover::before{transform:translateX(0)}
+.btn-next:hover,.btn-submit:hover{color:var(--ink)}
+.btn-next span,.btn-submit span{position:relative;z-index:1}
+/* Spinner on submit */
+.btn-submit.loading{pointer-events:none;opacity:.7}
+.step-summary{background:rgba(201,151,90,.04);border:1px solid var(--border);padding:20px;margin-bottom:28px}
+.step-summary-title{font-size:11px;color:var(--smoke);letter-spacing:.2em;margin-bottom:14px}
+.summary-row{display:flex;gap:12px;margin-bottom:10px;font-size:12px}
+.summary-key{color:var(--smoke);min-width:90px;letter-spacing:.06em}
+.summary-val{color:var(--paper);flex:1;font-weight:300}
+.submit-success{text-align:center;padding:60px 20px;display:none}
+.submit-success.visible{display:block;animation:panel-in .5s ease}
+.success-kanji{font-family:var(--font-jp);font-size:80px;color:rgba(201,151,90,.25);margin-bottom:24px;line-height:1;animation:candle-flicker 3s ease-in-out infinite}
+@keyframes candle-flicker{0%,100%{opacity:.25;transform:scale(1)}50%{opacity:.4;transform:scale(1.03)}}
+.success-title{font-family:var(--font-jp);font-size:22px;color:var(--paper);letter-spacing:.22em;margin-bottom:14px}
+.success-text{font-size:13px;color:var(--ash);line-height:2;letter-spacing:.05em}
+.success-btn{display:inline-block;margin-top:32px;background:none;border:1px solid var(--gold);color:var(--gold);font-family:var(--font-jp);font-size:13px;letter-spacing:.22em;padding:14px 36px;transition:all var(--tr)}
+.success-btn:hover{background:var(--gold);color:var(--ink)}
+
+/* ── HoF ────────────────────────────────────────────────────── */
+.hof-page{max-width:900px;margin:0 auto}
+.hof-hero{text-align:center;padding:40px 20px 48px;border-bottom:1px solid var(--border);margin-bottom:40px}
+.hof-hero-title{font-family:var(--font-jp);font-size:clamp(28px,5vw,52px);color:var(--gold);letter-spacing:.25em;margin-bottom:12px}
+.hof-hero-text{font-family:var(--font-en);font-style:italic;font-size:14px;color:var(--ash);letter-spacing:.1em}
+.hof-card{border:1px solid rgba(201,151,90,.35);padding:36px;margin-bottom:28px;background:rgba(201,151,90,.02);position:relative;overflow:hidden}
+.hof-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(201,151,90,.04),transparent 60%);pointer-events:none}
+.hof-badge{display:inline-flex;align-items:center;gap:6px;background:var(--gold);color:var(--ink);font-family:var(--font-body);font-size:10px;font-weight:700;letter-spacing:.15em;padding:4px 14px;margin-bottom:18px}
+.hof-title{font-family:var(--font-jp);font-size:24px;color:var(--paper);letter-spacing:.1em;margin-bottom:10px}
+.hof-story{font-size:13px;color:var(--ash);line-height:2;font-weight:300;margin-top:16px}
+.hof-votes{display:flex;align-items:baseline;gap:6px;margin-top:20px}
+.hof-votes-num{font-family:var(--font-en);font-size:36px;color:var(--gold)}
+.hof-votes-label{font-size:11px;color:var(--smoke);letter-spacing:.15em}
+
+/* ── Modal ──────────────────────────────────────────────────── */
+#modal-overlay{position:fixed;inset:0;background:rgba(8,6,4,.93);z-index:2000;display:none;align-items:flex-start;justify-content:center;padding:24px 16px;overflow-y:auto;backdrop-filter:blur(5px)}
+#modal-overlay.open{display:flex;animation:overlay-in .25s ease}
+@keyframes overlay-in{from{opacity:0}to{opacity:1}}
+.modal{background:var(--ink-light);border:1px solid rgba(201,151,90,.28);width:100%;max-width:620px;padding:44px;position:relative;animation:modal-in .3s ease;margin:auto}
+@keyframes modal-in{from{transform:translateY(18px);opacity:0}to{transform:translateY(0);opacity:1}}
+@media(max-width:600px){.modal{padding:28px 20px}}
+.modal-close{position:absolute;top:16px;right:18px;background:none;border:none;color:var(--smoke);font-size:18px;line-height:1;transition:color var(--tr)}
+.modal-close:hover{color:var(--paper)}
+.modal-thumb{width:100%;aspect-ratio:16/9;background:linear-gradient(135deg,rgba(201,151,90,.06),rgba(26,20,16,.9));border:1px solid rgba(201,151,90,.1);display:flex;align-items:center;justify-content:center;font-family:var(--font-jp);font-size:80px;color:rgba(201,151,90,.08);margin-bottom:26px;overflow:hidden}
+.modal-thumb img{width:100%;height:100%;object-fit:cover;opacity:.72;filter:sepia(12%)}
+.modal-title{font-family:var(--font-jp);font-size:24px;color:var(--paper);letter-spacing:.1em;line-height:1.4;margin-bottom:8px}
+.modal-creator-row{display:flex;align-items:center;gap:10px;margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid rgba(201,151,90,.13)}
+.modal-meta{font-size:10px;color:var(--smoke);margin-top:2px}
+.modal-desc{font-size:13px;line-height:2.05;color:var(--ash);font-weight:300;margin-bottom:22px;white-space:pre-wrap}
+.modal-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:28px}
+.modal-tag{font-family:var(--font-body);font-size:10px;letter-spacing:.09em;color:var(--smoke);border:1px solid rgba(138,125,107,.22);padding:3px 9px}
+.modal-vote-area{display:flex;align-items:center;gap:16px;padding:20px;border:1px solid rgba(201,151,90,.13);background:rgba(255,255,255,.01);margin-bottom:28px}
+@media(max-width:520px){.modal-vote-area{flex-direction:column;align-items:flex-start;gap:12px}}
+.modal-vote-text{flex:1;font-size:12px;color:var(--ash);line-height:1.75;letter-spacing:.04em}
+.modal-vote-btn{background:none;border:1px solid var(--ember);color:var(--ember);font-family:var(--font-body);font-size:11px;letter-spacing:.13em;padding:11px 20px;white-space:nowrap;transition:all var(--tr)}
+.modal-vote-btn:hover,.modal-vote-btn.voted{background:var(--ember);color:var(--paper)}
+.modal-vote-count{font-family:var(--font-en);font-size:16px}
+.comments-section{border-top:1px solid rgba(201,151,90,.13);padding-top:26px}
+.comments-title{font-family:var(--font-jp);font-size:13px;color:var(--gold);letter-spacing:.18em;margin-bottom:18px}
+.comment-item{padding:14px 0;border-bottom:1px solid rgba(201,151,90,.07)}
+.comment-item:last-of-type{border-bottom:none}
+.comment-head{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.comment-author-name{font-size:11px;color:var(--ash);letter-spacing:.04em}
+.comment-time{font-size:10px;color:var(--smoke);margin-left:auto}
+.comment-text{font-size:12px;color:var(--ash);line-height:1.85;padding-left:28px;font-weight:300}
+.comment-input-wrap{display:flex;gap:7px;margin-top:16px}
+.comment-input{flex:1;background:rgba(255,255,255,.03);border:1px solid var(--border);color:var(--paper);font-family:inherit;font-size:12px;padding:9px 12px;outline:none;transition:border-color var(--tr)}
+.comment-input:focus{border-color:var(--gold)}
+.comment-input::placeholder{color:var(--smoke)}
+.comment-send{background:none;border:1px solid var(--border);color:var(--ash);font-family:var(--font-body);font-size:11px;letter-spacing:.1em;padding:9px 16px;transition:all var(--tr);white-space:nowrap}
+.comment-send:hover{border-color:var(--gold);color:var(--gold)}
+/* Login required overlay in modal */
+.modal-login-req{background:rgba(26,20,16,.85);position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;backdrop-filter:blur(3px)}
+.modal-login-req p{font-size:13px;color:var(--ash);letter-spacing:.08em}
+
+/* ── Toast ──────────────────────────────────────────────────── */
+#toast-container{position:fixed;bottom:28px;right:28px;z-index:5000;display:flex;flex-direction:column;gap:10px;pointer-events:none}
+.toast{background:var(--ink-light);border:1px solid var(--border);padding:14px 20px;font-size:12px;letter-spacing:.06em;color:var(--paper);max-width:320px;pointer-events:all;animation:toast-in .3s ease}
+.toast.success{border-left:3px solid var(--gold)}
+.toast.error{border-left:3px solid var(--ember)}
+@keyframes toast-in{from{transform:translateX(20px);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes toast-out{from{transform:translateX(0);opacity:1}to{transform:translateX(20px);opacity:0}}
+
+/* ── Footer ─────────────────────────────────────────────────── */
+footer{border-top:1px solid rgba(201,151,90,.12);padding:36px 20px;text-align:center;position:relative;z-index:10}
+.footer-orn{font-size:11px;color:var(--smoke);margin-bottom:10px}
+.footer-text{font-family:var(--font-en);font-style:italic;font-size:12px;color:var(--smoke);letter-spacing:.1em;line-height:2}
+
+/* ── Animations ─────────────────────────────────────────────── */
+.fade-up{opacity:0;transform:translateY(16px);animation:fade-up-in .55s ease forwards}
+@keyframes fade-up-in{to{opacity:1;transform:translateY(0)}}
+.delay-1{animation-delay:.08s}.delay-2{animation-delay:.16s}.delay-3{animation-delay:.24s}
+.delay-4{animation-delay:.32s}.delay-5{animation-delay:.40s}.delay-6{animation-delay:.48s}
+
+/* ── Responsive ─────────────────────────────────────────────── */
+@media(max-width:768px){
+  #site-header{padding:60px 16px 44px}
+  .stats-bar{flex-wrap:wrap}
+  .stat-item{min-width:50%;border-bottom:1px solid rgba(201,151,90,.08)}
+  #main-nav{flex-wrap:wrap}
+  .nav-btn{min-width:50%;border-bottom:1px solid rgba(201,151,90,.08)}
+}
+@media(max-width:480px){
+  .site-title{letter-spacing:.15em}
+  .filter-bar{gap:4px}
+  .filter-chip{font-size:10px;padding:5px 11px}
+  .card-title{font-size:15px}
+  .form-nav{flex-direction:column}
+  .btn-prev{flex:none;width:100%}
+  .ranking-full-num{font-size:28px;min-width:40px}
+  .ranking-full-thumb{display:none}
+}
+</style>
+</head>
+<body>
+
+<div id="particles"></div>
+
+<!-- ── AUTH BAR ─────────────────────────────────────────────── -->
+<div id="auth-bar">
+  <div id="auth-loading"><div class="auth-skeleton"></div></div>
+  <div id="auth-logged-out" style="display:none">
+    <button class="auth-btn" onclick="loginWithTwitter()">
+      <span>𝕏</span> <span data-t="loginBtn">X（Twitter）でログイン</span>
+    </button>
+  </div>
+  <div id="auth-logged-in" style="display:none;align-items:center;gap:10px">
+    <div class="auth-status-dot online"></div>
+    <img id="auth-avatar" class="auth-avatar" src="" alt="">
+    <span id="auth-display-name" class="auth-name"></span>
+    <button class="auth-btn logout" onclick="logout()" data-t="logoutBtn">ログアウト</button>
+  </div>
+</div>
+
+<!-- ── HEADER ────────────────────────────────────────────────── -->
+<header id="site-header">
+  <div class="lang-switcher">
+    <button class="lang-btn active" data-lang="ja" onclick="setLang('ja')">日本語</button>
+    <button class="lang-btn" data-lang="en" onclick="setLang('en')">EN</button>
+  </div>
+  <div class="header-ornament">
+    <div class="orn-line orn-l"></div>
+    <div class="orn-dot">✦</div>
+    <div class="orn-line orn-r"></div>
+  </div>
+  <h1 class="site-title" data-t="siteTitle">供養アーカイブ</h1>
+  <div class="site-title-en">Kuyo Archive</div>
+  <p class="site-tagline" id="site-tagline">
+    没になったキャラクター設定たちの、安らかな眠りを。<br>
+    ファンの声があれば、いつかまた目覚めるかもしれない。
+  </p>
+</header>
+
+<!-- ── STATS ─────────────────────────────────────────────────── -->
+<div class="stats-bar">
+  <div class="stat-item fade-up delay-1"><div class="stat-number" id="stat-posts">—</div><div class="stat-label" data-t="statPosts">供養された設定</div></div>
+  <div class="stat-item fade-up delay-2"><div class="stat-number" id="stat-votes">—</div><div class="stat-label" data-t="statVotes">復活投票数</div></div>
+  <div class="stat-item fade-up delay-3"><div class="stat-number" id="stat-creators">—</div><div class="stat-label" data-t="statCreators">参加クリエイター</div></div>
+  <div class="stat-item fade-up delay-4"><div class="stat-number" id="stat-hof">—</div><div class="stat-label" data-t="statHof">殿堂入り復活済み</div></div>
+</div>
+
+<!-- ── NAV ───────────────────────────────────────────────────── -->
+<nav id="main-nav">
+  <button class="nav-btn active" data-t="navArchive" onclick="showSection('archive')">📜 アーカイブ</button>
+  <button class="nav-btn" data-t="navRanking" onclick="showSection('ranking')">🔥 復活ランキング</button>
+  <button class="nav-btn" data-t="navPost" onclick="showSection('post')">🕯 設定を供養する</button>
+  <button class="nav-btn" data-t="navHof" onclick="showSection('hof')">👑 殿堂入り</button>
+</nav>
+
+<!-- ── MAIN ──────────────────────────────────────────────────── -->
+<main id="main-content">
+
+  <!-- ARCHIVE -->
+  <section id="section-archive">
+    <div class="layout-grid">
+      <div>
+        <div class="section-head fade-up">
+          <span class="section-head-title" data-t="navArchive">📜 アーカイブ</span>
+          <span class="section-head-sub">Botsu Archive</span>
+          <div class="section-head-line"></div>
+        </div>
+        <div class="search-wrap fade-up delay-1">
+          <span class="search-icon">🔍</span>
+          <input id="search-input" type="text" data-t-placeholder="searchPlaceholder" placeholder="タイトル・クリエイター名・タグで検索…">
+          <button class="search-clear" id="search-clear">✕</button>
+        </div>
+        <div class="filter-bar fade-up delay-2">
+          <button class="filter-chip active" data-t="filterAll" onclick="setFilter(this,'all')">すべて</button>
+          <button class="filter-chip" data-t="filterDesign" onclick="setFilter(this,'design')">キャラ設定</button>
+          <button class="filter-chip" data-t="filterOutfit" onclick="setFilter(this,'outfit')">衣装案</button>
+          <button class="filter-chip" data-t="filterName" onclick="setFilter(this,'name')">キャラ名</button>
+          <button class="filter-chip" data-t="filterLore" onclick="setFilter(this,'lore')">世界観・設定</button>
+          <button class="filter-chip" data-t="filterBgm" onclick="setFilter(this,'bgm')">BGM案</button>
+        </div>
+        <div class="sort-bar fade-up delay-2">
+          <span class="sort-label">並び替え：</span>
+          <button class="sort-btn active" data-t="sortVotes" onclick="setSort(this,'votes')">投票数順</button>
+          <button class="sort-btn" data-t="sortDate" onclick="setSort(this,'date')">新着順</button>
+          <button class="sort-btn" data-t="sortComments" onclick="setSort(this,'comments')">コメント順</button>
+        </div>
+        <div class="results-info" id="results-info"></div>
+        <div id="cards-grid"></div>
+      </div>
+      <aside class="sidebar fade-up delay-3">
+        <div class="sidebar-block">
+          <div class="sidebar-title" data-t="rankingTitle">🔥 今週の復活候補</div>
+          <div id="rank-sidebar"></div>
+        </div>
+        <div class="sidebar-block">
+          <div class="sidebar-title">✦ 最近の活動</div>
+          <div id="activity-feed" style="font-size:11px;color:var(--ash);line-height:2.1;letter-spacing:.04em">
+            <div>🕯 <span style="color:var(--smoke)">読み込み中…</span></div>
+          </div>
+        </div>
+        <div class="sidebar-block">
+          <div class="sidebar-title" data-t="weeklyTitle">📅 週次レポート</div>
+          <div style="font-size:12px;color:var(--ash);line-height:1.7;letter-spacing:.04em;margin-bottom:10px" data-t="weeklyDesc">今週の注目没設定をメールで受け取ろう</div>
+          <div class="email-row">
+            <input class="email-input" id="email-input" type="email" data-t-placeholder="weeklyPlaceholder" placeholder="your@email.com">
+            <button class="email-btn" data-t="weeklyBtn" onclick="subscribeEmail()">登録</button>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- RANKING -->
+  <section id="section-ranking" style="display:none">
+    <div class="ranking-page">
+      <div class="ranking-hero fade-up">
+        <div class="section-head-title" style="font-size:clamp(22px,4vw,36px);letter-spacing:.25em;color:var(--paper)" data-t="rankingPageTitle">復活ランキング</div>
+        <div class="ranking-hero-sub" data-t="rankingHeroText">票を集めた設定が、クリエイターの目に届く。</div>
+      </div>
+      <div id="ranking-page-list"></div>
+    </div>
+  </section>
+
+  <!-- POST FORM -->
+  <section id="section-post" style="display:none">
+    <div class="post-page">
+      <!-- Auth gate (shown when logged out) -->
+      <div class="auth-gate" id="auth-gate">
+        <div class="auth-gate-icon">🕯</div>
+        <div class="auth-gate-title" data-t="authGateTitle">ログインが必要です</div>
+        <div class="auth-gate-text" data-t="authGateText">設定を供養するには、X（Twitter）でのログインが必要です。<br>ファンとしての投票・コメントはログイン不要で行えます。</div>
+        <button class="twitter-login-btn" onclick="loginWithTwitter()">
+          <span>𝕏 でログインして供養する</span>
+        </button>
+      </div>
+
+      <!-- Form (shown when logged in) -->
+      <div id="post-form-wrap" style="display:none">
+        <div class="submit-success" id="submit-success">
+          <div class="success-kanji">✦</div>
+          <div class="success-title" data-t="successTitle">供養が完了しました</div>
+          <div class="success-text" data-t="successText">あなたの設定は、ここで安らかに眠ります。<br>ファンの声があれば、いつかまた目覚めるかもしれません。</div>
+          <button class="success-btn" data-t="backToArchive" onclick="showSection('archive')">アーカイブに戻る</button>
+        </div>
+
+        <div class="form-main" id="form-main">
+          <div class="form-intro fade-up">
+            <div class="form-intro-title" data-t="formTitle">設定を供養する</div>
+            <div class="form-intro-text">ボツになった設定・衣装案・名前・世界観……<br>ここに記録することで、いつか誰かの心に届くかもしれません。</div>
+          </div>
+          <div class="form-progress fade-up delay-1">
+            <div class="progress-step active"><div class="progress-dot">1</div><div class="progress-label" data-t="step1">基本情報</div></div>
+            <div class="progress-step"><div class="progress-dot">2</div><div class="progress-label" data-t="step2">詳細</div></div>
+            <div class="progress-step"><div class="progress-dot">3</div><div class="progress-label" data-t="step3">確認</div></div>
+          </div>
+          <!-- Step 1 -->
+          <div class="form-panel active" id="form-step-1">
+            <div class="form-group">
+              <label class="form-label" for="f-title" data-t="labelTitle">設定のタイトル<span class="form-required">＊</span></label>
+              <input id="f-title" type="text" class="form-input" placeholder="例：闇堕ちver. / 初期デザイン「夜桜」 / ボツ名「虚ノ月」" oninput="clearFieldError('f-title','f-title-err')">
+              <div class="form-error-msg" id="f-title-err"></div>
+            </div>
+            <div class="form-group">
+              <label class="form-label" data-t="labelCat">カテゴリ<span class="form-required">＊</span></label>
+              <div class="cat-grid">
+                <div><input type="radio" name="cat" id="cat-design" value="design" class="cat-radio" checked><label for="cat-design" class="cat-label" data-t="catDesign">🎭 キャラ設定・コンセプト</label></div>
+                <div><input type="radio" name="cat" id="cat-outfit" value="outfit" class="cat-radio"><label for="cat-outfit" class="cat-label" data-t="catOutfit">👗 衣装・ビジュアル案</label></div>
+                <div><input type="radio" name="cat" id="cat-name" value="name" class="cat-radio"><label for="cat-name" class="cat-label" data-t="catName">✍️ キャラ名・呼び名</label></div>
+                <div><input type="radio" name="cat" id="cat-lore" value="lore" class="cat-radio"><label for="cat-lore" class="cat-label" data-t="catLore">🌙 世界観・バックストーリー</label></div>
+                <div><input type="radio" name="cat" id="cat-bgm" value="bgm" class="cat-radio"><label for="cat-bgm" class="cat-label" data-t="catBgm">🎵 BGM・楽曲案</label></div>
+                <div><input type="radio" name="cat" id="cat-other" value="other" class="cat-radio"><label for="cat-other" class="cat-label" data-t="catOther">📎 その他</label></div>
+              </div>
+            </div>
+            <div class="form-nav">
+              <button id="btn-prev-1" class="btn-prev" style="display:none" onclick="prevStep()">← 戻る</button>
+              <button class="btn-next" onclick="nextStep()"><span data-t="nextBtn">次へ →</span></button>
+            </div>
+          </div>
+          <!-- Step 2 -->
+          <div class="form-panel" id="form-step-2">
+            <div class="form-group">
+              <label class="form-label" for="f-reason" data-t="labelReason">なぜボツになったか</label>
+              <select id="f-reason" class="form-select">
+                <option value="">選択してください</option>
+                <option>方向性が変わってしまった</option><option>既存キャラと被ってしまった</option>
+                <option>技術的に実現できなかった</option><option>時期が悪かった</option>
+                <option>単純に迷って選ばなかった</option><option>その他</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="f-desc" data-t="labelDesc">設定の詳細<span class="form-required">＊</span></label>
+              <textarea id="f-desc" class="form-textarea" placeholder="どんな設定だったか、どんな思いで作ったか、どうしてボツにしたか……自由に書いてください。" oninput="clearFieldError('f-desc','f-desc-err')"></textarea>
+              <div class="char-counter" id="char-counter">0 / 2000</div>
+              <div class="form-error-msg" id="f-desc-err"></div>
+              <div class="form-hint" data-t="labelDescHint">ファンへのメッセージ・裏話なども歓迎です</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label" data-t="labelTags">タグ</label>
+              <div class="tags-wrap" id="tags-wrap"><input type="text" class="tags-input" id="tags-input" placeholder="例：ダーク系 和風 闇堕ち"></div>
+              <div class="form-hint" data-t="labelTagsHint">Enterまたはスペースで追加。最大8個。</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label" data-t="labelImage">画像・資料（任意）</label>
+              <div class="upload-zone" id="upload-zone">
+                <input type="file" id="f-image" accept="image/*" style="display:none">
+                <div class="upload-icon">🖼</div>
+                <div class="upload-text">クリックまたはドラッグ＆ドロップ<br><span style="color:var(--smoke);font-size:10px">PNG / JPG / GIF · 最大10MB</span></div>
+                <img class="upload-preview" id="upload-preview" alt="Preview">
+                <div class="upload-filename" id="upload-filename"></div>
+              </div>
+            </div>
+            <div class="form-nav">
+              <button class="btn-prev" onclick="prevStep()" data-t="prevBtn">← 戻る</button>
+              <button class="btn-next" onclick="nextStep()"><span data-t="nextBtn">次へ →</span></button>
+            </div>
+          </div>
+          <!-- Step 3 -->
+          <div class="form-panel" id="form-step-3">
+            <div class="step-summary">
+              <div class="step-summary-title" data-t="summaryTitle">入力内容の確認</div>
+              <div class="summary-row"><div class="summary-key" data-t="summaryTitleLabel">タイトル</div><div class="summary-val" id="summary-title-val">—</div></div>
+              <div class="summary-row"><div class="summary-key" data-t="summaryCatLabel">カテゴリ</div><div class="summary-val" id="summary-cat-val">—</div></div>
+              <div class="summary-row"><div class="summary-key" data-t="summaryReasonLabel">ボツ理由</div><div class="summary-val" id="summary-reason-val">—</div></div>
+              <div class="summary-row"><div class="summary-key" data-t="summaryDescLabel">詳細</div><div class="summary-val" id="summary-desc-val">—</div></div>
+              <div class="summary-row"><div class="summary-key" data-t="summaryTagsLabel">タグ</div><div class="summary-val" id="summary-tags-val">—</div></div>
+            </div>
+            <div class="form-nav">
+              <button class="btn-prev" onclick="prevStep()" data-t="prevBtn">← 戻る</button>
+              <button class="btn-submit" id="btn-submit" onclick="submitForm()"><span data-t="submitBtn">✦ この設定を供養する ✦</span></button>
+            </div>
+          </div>
+        </div><!-- /form-main -->
+      </div><!-- /post-form-wrap -->
+    </div>
+  </section>
+
+  <!-- HOF -->
+  <section id="section-hof" style="display:none">
+    <div class="hof-page">
+      <div class="hof-hero fade-up">
+        <div class="hof-hero-title" data-t="hofTitle">殿堂入り</div>
+        <div class="hof-hero-text" data-t="hofSubtitle">Fan voices brought them back to life.</div>
+      </div>
+      <div id="hof-list"></div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="footer-orn">✦</div>
+  <div class="footer-text">供養アーカイブ — Kuyo Archive<br><span style="font-size:11px;opacity:.5">没になった設定に、新しい命を。New life for discarded concepts.</span></div>
+</footer>
+
+<!-- MODAL -->
+<div id="modal-overlay">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div id="modal-body"></div>
+  </div>
+</div>
+<div id="toast-container"></div>
+
+<!-- ─────────────────────────────────────────────────────────────
+     JAVASCRIPT
+     Replace __SUPABASE_URL__ and __SUPABASE_ANON_KEY__ with your
+     actual values (or let the GitHub Actions workflow inject them).
+──────────────────────────────────────────────────────────────── -->
+<script>
+'use strict';
+
+/* ── Supabase config ────────────────────────────────────────── */
+const SUPABASE_URL      = '__SUPABASE_URL__';
+const SUPABASE_ANON_KEY = '__SUPABASE_ANON_KEY__';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/* ── State ──────────────────────────────────────────────────── */
+const state = {
+  lang: 'ja',
+  section: 'archive',
+  filter: 'all',
+  sort: 'votes',   // 'votes' | 'date' | 'comments'
+  query: '',
+  user: null,
+  profile: null,
+  voted: new Set(),   // post UUIDs the current user has voted on
+  posts: [],          // cached posts for current view
+  formStep: 1,
+  tags: [],
+  formData: {},
+  uploadFile: null,
+};
+
+/* ── Translations ───────────────────────────────────────────── */
+const T = {
+  ja:{
+    siteTitle:'供養アーカイブ',tagline:'没になったキャラクター設定たちの、安らかな眠りを。\nファンの声があれば、いつかまた目覚めるかもしれない。',
+    loginBtn:'X（Twitter）でログイン',logoutBtn:'ログアウト',
+    authGateTitle:'ログインが必要です',authGateText:'設定を供養するには、X（Twitter）でのログインが必要です。\nファンとしての投票・コメントはログイン不要で行えます。',
+    statPosts:'供養された設定',statVotes:'復活投票数',statCreators:'参加クリエイター',statHof:'殿堂入り復活済み',
+    navArchive:'📜 アーカイブ',navRanking:'🔥 復活ランキング',navPost:'🕯 設定を供養する',navHof:'👑 殿堂入り',
+    filterAll:'すべて',filterDesign:'キャラ設定',filterOutfit:'衣装案',filterName:'キャラ名',filterLore:'世界観・設定',filterBgm:'BGM案',
+    sortVotes:'投票数順',sortDate:'新着順',sortComments:'コメント順',
+    revive:'復活を望む',voted:'投票済み',
+    searchPlaceholder:'タイトル・クリエイター名・タグで検索…',
+    results:(n)=>`${n}件の設定`,noResults:'該当する設定が見つかりませんでした',noResultsSub:'キーワードを変えてお試しください',
+    catDesign:'🎭 キャラ設定・コンセプト',catOutfit:'👗 衣装・ビジュアル案',catName:'✍️ キャラ名・呼び名',catLore:'🌙 世界観・バックストーリー',catBgm:'🎵 BGM・楽曲案',catOther:'📎 その他',
+    reasons:['方向性が変わってしまった','既存キャラと被ってしまった','技術的に実現できなかった','時期が悪かった','単純に迷って選ばなかった','その他'],
+    step1:'基本情報',step2:'詳細',step3:'確認',
+    formTitle:'設定を供養する',labelTitle:'設定のタイトル',labelCat:'カテゴリ',labelReason:'なぜボツになったか',labelDesc:'設定の詳細',
+    labelDescHint:'ファンへのメッセージ・裏話なども歓迎です',labelTags:'タグ',labelTagsHint:'Enterまたはスペースで追加。最大8個。',labelImage:'画像・資料（任意）',
+    prevBtn:'← 戻る',nextBtn:'次へ →',submitBtn:'✦ この設定を供養する ✦',
+    summaryTitle:'入力内容の確認',summaryTitleLabel:'タイトル',summaryCatLabel:'カテゴリ',summaryReasonLabel:'ボツ理由',summaryDescLabel:'詳細',summaryTagsLabel:'タグ',
+    successTitle:'供養が完了しました',successText:'あなたの設定は、ここで安らかに眠ります。\nファンの声があれば、いつかまた目覚めるかもしれません。',backToArchive:'アーカイブに戻る',
+    modalVoteText:'この設定の復活を望みますか？\nあなたの一票がクリエイターへの声になります。',
+    commentsTitle:(n)=>`ファンのコメント (${n})`,
+    commentPlaceholder:'「もし復活したら〇〇したい」など…',commentSend:'送る',
+    rankingTitle:'今週の復活候補',rankingPageTitle:'復活ランキング',rankingHeroText:'票を集めた設定が、クリエイターの目に届く。',
+    hofTitle:'殿堂入り',hofSubtitle:'Fan voices brought them back to life.',hofRevived:'復活済み',
+    weeklyTitle:'📅 週次レポート',weeklyDesc:'今週の注目没設定をメールで受け取ろう',weeklyBtn:'登録',weeklyPlaceholder:'your@email.com',
+    titleRequired:'タイトルを入力してください',descRequired:'詳細を入力してください（10文字以上）',
+    toastVoted:'🕯 復活を望む票を投じました',toastUnvoted:'票を取り消しました',
+    toastSubmitted:'✦ 供養が完了しました',toastCommented:'コメントを送りました',toastEmail:'登録ありがとうございます',
+    toastLoginRequired:'コメントするにはログインしてください',toastError:'エラーが発生しました。しばらくしてから再度お試しください。',
+    toastUploading:'画像をアップロード中…',loading:'読み込み中…',
+  },
+  en:{
+    siteTitle:'Kuyo Archive',tagline:'A resting place for discarded character concepts.\nWith enough love from fans, they may yet awaken.',
+    loginBtn:'Sign in with X (Twitter)',logoutBtn:'Sign out',
+    authGateTitle:'Login required',authGateText:'Signing in with X (Twitter) is required to submit a concept.\nVoting and commenting are available without logging in.',
+    statPosts:'Archived Concepts',statVotes:'Revival Votes',statCreators:'Creators',statHof:'Revived',
+    navArchive:'📜 Archive',navRanking:'🔥 Revival Ranking',navPost:'🕯 Submit a Concept',navHof:'👑 Hall of Fame',
+    filterAll:'All',filterDesign:'Concept',filterOutfit:'Outfit',filterName:'Name',filterLore:'Lore',filterBgm:'BGM',
+    sortVotes:'Most Voted',sortDate:'Newest',sortComments:'Most Comments',
+    revive:'Revive',voted:'Voted',
+    searchPlaceholder:'Search by title, creator, or tag…',
+    results:(n)=>`${n} concepts`,noResults:'No concepts found',noResultsSub:'Try different keywords',
+    catDesign:'🎭 Character Concept',catOutfit:'👗 Outfit / Visual',catName:'✍️ Name / Alias',catLore:'🌙 Lore / Backstory',catBgm:'🎵 BGM / Music',catOther:'📎 Other',
+    reasons:['Direction changed','Too similar to existing','Not technically feasible','Bad timing','Simply couldn\'t decide','Other'],
+    step1:'Basic Info',step2:'Details',step3:'Confirm',
+    formTitle:'Submit a Concept',labelTitle:'Concept Title',labelCat:'Category',labelReason:'Why Discarded',labelDesc:'Details',
+    labelDescHint:'Behind-the-scenes notes and messages to fans are welcome',labelTags:'Tags',labelTagsHint:'Press Enter or Space. Max 8 tags.',labelImage:'Image / Reference (optional)',
+    prevBtn:'← Back',nextBtn:'Next →',submitBtn:'✦ Submit This Concept ✦',
+    summaryTitle:'Review Your Submission',summaryTitleLabel:'Title',summaryCatLabel:'Category',summaryReasonLabel:'Reason',summaryDescLabel:'Details',summaryTagsLabel:'Tags',
+    successTitle:'Successfully Archived',successText:'Your concept rests peacefully here.\nWith enough love from fans, it may yet awaken.',backToArchive:'Back to Archive',
+    modalVoteText:'Want this concept to be revived?\nYour vote sends a message to the creator.',
+    commentsTitle:(n)=>`Fan Comments (${n})`,
+    commentPlaceholder:'"I\'d love to see this revived for…"',commentSend:'Post',
+    rankingTitle:'This Week\'s Top',rankingPageTitle:'Revival Ranking',rankingHeroText:'The most-voted concepts are seen by creators.',
+    hofTitle:'Hall of Fame',hofSubtitle:'Fan voices brought them back to life.',hofRevived:'Revived',
+    weeklyTitle:'📅 Weekly Report',weeklyDesc:'Get top concepts in your inbox weekly',weeklyBtn:'Join',weeklyPlaceholder:'your@email.com',
+    titleRequired:'Please enter a title',descRequired:'Please enter details (at least 10 characters)',
+    toastVoted:'🕯 Revival vote cast',toastUnvoted:'Vote removed',
+    toastSubmitted:'✦ Concept successfully archived',toastCommented:'Comment posted',toastEmail:'Thanks for subscribing!',
+    toastLoginRequired:'Please log in to comment',toastError:'Something went wrong. Please try again.',
+    toastUploading:'Uploading image…',loading:'Loading…',
+  }
+};
+const t = () => T[state.lang];
+
+const catLabels = {design:{ja:'キャラ設定',en:'Concept'},outfit:{ja:'衣装案',en:'Outfit'},name:{ja:'キャラ名',en:'Name'},lore:{ja:'世界観',en:'Lore'},bgm:{ja:'BGM案',en:'BGM'},other:{ja:'その他',en:'Other'}};
+const catLabel = cat => catLabels[cat]?.[state.lang] || cat;
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const relTime = iso => {
+  const s = (Date.now() - new Date(iso)) / 1000;
+  if (s < 60)   return state.lang==='ja' ? 'たった今'       : 'just now';
+  if (s < 3600) return state.lang==='ja' ? `${Math.floor(s/60)}分前`   : `${Math.floor(s/60)}m ago`;
+  if (s < 86400)return state.lang==='ja' ? `${Math.floor(s/3600)}時間前`: `${Math.floor(s/3600)}h ago`;
+  return state.lang==='ja' ? `${Math.floor(s/86400)}日前` : `${Math.floor(s/86400)}d ago`;
+};
+
+/* ── Toast ──────────────────────────────────────────────────── */
+function showToast(msg, type='success') {
+  const c = document.getElementById('toast-container');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  c.appendChild(el);
+  setTimeout(() => { el.style.animation = 'toast-out .3s ease forwards'; setTimeout(() => el.remove(), 300); }, 2800);
+}
+
+/* ── Particles ──────────────────────────────────────────────── */
+function initParticles() {
+  const c = document.getElementById('particles');
+  for (let i = 0; i < 22; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const sz = 1.2 + Math.random() * 2.5;
+    p.style.cssText = `left:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${Math.random()>.6?'var(--gold)':'var(--ember)'};--d:${(Math.random()-.5)*100}px;animation-duration:${7+Math.random()*10}s;animation-delay:${Math.random()*12}s;`;
+    c.appendChild(p);
+  }
+}
+
+/* ── Auth ───────────────────────────────────────────────────── */
+async function initAuth() {
+  const { data: { session } } = await sb.auth.getSession();
+  onAuthChange(session?.user ?? null);
+
+  sb.auth.onAuthStateChange((_event, session) => {
+    onAuthChange(session?.user ?? null);
+    if (session?.user) loadVotedPosts();
+  });
+}
+
+function onAuthChange(user) {
+  state.user = user;
+  const loading   = document.getElementById('auth-loading');
+  const loggedOut = document.getElementById('auth-logged-out');
+  const loggedIn  = document.getElementById('auth-logged-in');
+
+  loading.style.display = 'none';
+  if (user) {
+    const meta = user.user_metadata;
+    document.getElementById('auth-avatar').src = meta.avatar_url || '';
+    document.getElementById('auth-display-name').textContent = meta.full_name || meta.user_name || '';
+    loggedIn.style.display  = 'flex';
+    loggedOut.style.display = 'none';
+    // Show form if on post section
+    if (state.section === 'post') showPostSection();
+  } else {
+    loggedIn.style.display  = 'none';
+    loggedOut.style.display = 'flex';
+    if (state.section === 'post') showPostSection();
+  }
+}
+
+async function loginWithTwitter() {
+  const { error } = await sb.auth.signInWithOAuth({
+    provider: 'twitter',
+    options: { redirectTo: location.href }
+  });
+  if (error) showToast(t().toastError, 'error');
+}
+
+async function logout() {
+  await sb.auth.signOut();
+  state.user = null;
+  state.voted.clear();
+  showToast(state.lang === 'ja' ? 'ログアウトしました' : 'Signed out');
+}
+
+/* ── Load voted posts for current user ─────────────────────── */
+async function loadVotedPosts() {
+  if (!state.user) return;
+  const { data } = await sb.from('votes').select('post_id').eq('user_id', state.user.id);
+  state.voted = new Set((data || []).map(v => v.post_id));
+}
+
+/* ── Fetch posts from Supabase ──────────────────────────────── */
+async function fetchPosts() {
+  showSkeletons();
+  let q = sb.from('posts')
+    .select(`*, profiles(username, display_name, avatar_url)`)
+    .eq('is_hof', false);
+
+  if (state.filter !== 'all') q = q.eq('category', state.filter);
+
+  if (state.query) {
+    // Supabase full-text search (simple config works for Japanese)
+    q = q.textSearch('title', state.query, { type: 'plain', config: 'simple' });
+  }
+
+  if (state.sort === 'votes')    q = q.order('vote_count', { ascending: false });
+  if (state.sort === 'date')     q = q.order('created_at', { ascending: false });
+  if (state.sort === 'comments') q = q.order('comment_count', { ascending: false });
+
+  q = q.limit(40);
+
+  const { data, error } = await q;
+  if (error) { showToast(t().toastError, 'error'); return; }
+  state.posts = data || [];
+  renderCards();
+  renderRankingSidebar();
+  renderStats();
+  renderActivityFeed();
+}
+
+/* ── Fetch stats ────────────────────────────────────────────── */
+async function renderStats() {
+  const { count: postCount } = await sb.from('posts').select('id', { count:'exact', head:true }).eq('is_hof', false);
+  const { data: voteSum }    = await sb.from('posts').select('vote_count').eq('is_hof', false);
+  const { count: hofCount }  = await sb.from('posts').select('id', { count:'exact', head:true }).eq('is_hof', true);
+  const { data: creators }   = await sb.from('profiles').select('id');
+
+  const totalVotes = (voteSum || []).reduce((s, r) => s + (r.vote_count || 0), 0);
+  document.getElementById('stat-posts').textContent    = postCount   ?? '—';
+  document.getElementById('stat-votes').textContent    = totalVotes.toLocaleString();
+  document.getElementById('stat-creators').textContent = (creators || []).length;
+  document.getElementById('stat-hof').textContent      = hofCount    ?? '—';
+}
+
+/* ── Render activity feed ───────────────────────────────────── */
+async function renderActivityFeed() {
+  // Latest 5 posts + votes combined via recent posts
+  const { data } = await sb.from('posts')
+    .select('title, created_at, profiles(display_name)')
+    .eq('is_hof', false)
+    .order('created_at', { ascending: false })
+    .limit(5);
+
+  const feed = document.getElementById('activity-feed');
+  if (!data || !data.length) { feed.innerHTML = ''; return; }
+  feed.innerHTML = data.map(p => `
+    <div style="font-size:11px;color:var(--ash);line-height:2.1;letter-spacing:.04em">
+      🕯 <span style="color:var(--smoke)">${relTime(p.created_at)}</span>
+      — ${esc(p.profiles?.display_name || '匿名')} が供養
+    </div>`).join('');
+}
+
+/* ── Render cards ───────────────────────────────────────────── */
+function showSkeletons() {
+  const g = document.getElementById('cards-grid');
+  g.innerHTML = Array(6).fill('').map(() => `
+    <div class="card-skeleton">
+      <div class="skel-thumb"></div>
+      <div class="skel-line" style="height:14px;width:60%"></div>
+      <div class="skel-line" style="height:10px;width:40%"></div>
+      <div class="skel-line" style="height:10px;width:90%"></div>
+      <div class="skel-line" style="height:10px;width:75%"></div>
+    </div>`).join('');
+}
+
+function renderCards() {
+  const grid = document.getElementById('cards-grid');
+  const info = document.getElementById('results-info');
+  const posts = state.posts;
+  info.textContent = t().results(posts.length);
+
+  if (!posts.length) {
+    grid.innerHTML = `<div class="empty-state"><div class="empty-kanji">没</div><div class="empty-text">${esc(t().noResults)}<br><span style="font-size:11px;opacity:.6">${esc(t().noResultsSub)}</span></div></div>`;
+    return;
+  }
+
+  grid.innerHTML = posts.map((p, i) => {
+    const creator    = p.profiles?.display_name || p.profiles?.username || '—';
+    const initials   = (creator[0] || '匿');
+    const voted      = state.voted.has(p.id);
+    const imgUrl     = p.image_url || null;
+    return `
+      <div class="botsu-card fade-up delay-${Math.min(i%6+1,6)}" data-id="${esc(p.id)}" onclick="openModal('${esc(p.id)}')">
+        ${p.is_hof ? '<div class="card-hof">殿堂入り</div>' : ''}
+        <div class="card-badge"><div class="badge-dot ${esc(p.category)}"></div>${esc(catLabel(p.category))}</div>
+        <div class="card-title">${esc(p.title)}</div>
+        <div class="card-creator">
+          <div class="avatar avatar-sm" style="background:linear-gradient(135deg,var(--ember),var(--gold))">${esc(initials)}</div>
+          <div class="creator-name">${esc(creator)}</div>
+        </div>
+        <div class="card-thumb">
+          ${imgUrl ? `<img src="${esc(imgUrl)}" alt="${esc(p.title)}" loading="lazy">` : '<div class="card-thumb-kanji">没</div>'}
+        </div>
+        <div class="card-desc">${esc(p.description)}</div>
+        <div class="card-footer">
+          <button class="vote-btn ${voted?'voted':''}" onclick="event.stopPropagation();castVote('${esc(p.id)}')">
+            🕯 <span class="vote-num" id="vn-${esc(p.id)}">${p.vote_count}</span>
+            <span id="vl-${esc(p.id)}">${voted ? esc(t().voted) : esc(t().revive)}</span>
+          </button>
+          <div class="card-date">${new Date(p.created_at).toLocaleDateString('ja-JP').replace(/\//g,'.')}</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+/* ── Render ranking sidebar ─────────────────────────────────── */
+async function renderRankingSidebar() {
+  const { data } = await sb.from('posts')
+    .select('id, title, vote_count, profiles(display_name,username)')
+    .eq('is_hof', false)
+    .order('vote_count', { ascending: false })
+    .limit(5);
+
+  const list = document.getElementById('rank-sidebar');
+  if (!data) return;
+  list.innerHTML = data.map((p, i) => {
+    const cls = i===0?'gold':i===1?'silver':i===2?'bronze':'';
+    const creator = p.profiles?.display_name || p.profiles?.username || '—';
+    return `<div class="rank-item" onclick="openModal('${esc(p.id)}')">
+      <div class="rank-num ${cls}">${i+1}</div>
+      <div class="rank-info">
+        <div class="rank-title-text">${esc(p.title)}</div>
+        <div class="rank-creator-text">${esc(creator)}</div>
+      </div>
+      <div class="rank-votes">${p.vote_count}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ── Render ranking page ────────────────────────────────────── */
+async function renderRankingPage() {
+  const { data } = await sb.from('posts')
+    .select('*, profiles(display_name,username,avatar_url)')
+    .eq('is_hof', false)
+    .order('vote_count', { ascending: false })
+    .limit(50);
+
+  const list = document.getElementById('ranking-page-list');
+  if (!data) return;
+  list.innerHTML = data.map((p, i) => {
+    const cls = i===0?'gold':i===1?'silver':i===2?'bronze':'';
+    const creator = p.profiles?.display_name || p.profiles?.username || '—';
+    const initials = (creator[0] || '匿');
+    return `<div class="ranking-full-item" onclick="openModal('${esc(p.id)}')">
+      <div class="ranking-full-num ${cls}">${i+1}</div>
+      <div class="ranking-full-thumb">
+        ${p.image_url ? `<img src="${esc(p.image_url)}" alt="">` : '没'}
+      </div>
+      <div class="ranking-full-info">
+        <div class="ranking-full-title">${esc(p.title)}</div>
+        <div class="ranking-full-creator">
+          <div class="avatar avatar-sm" style="background:linear-gradient(135deg,var(--ember),var(--gold))">${esc(initials)}</div>
+          <div class="creator-name">${esc(creator)}</div>
+        </div>
+        <div class="ranking-full-desc">${esc(p.description)}</div>
+      </div>
+      <div class="ranking-full-votes">
+        ${p.vote_count}<small>${state.lang==='ja'?'票':'votes'}</small>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ── Render HoF ─────────────────────────────────────────────── */
+async function renderHof() {
+  const { data } = await sb.from('posts')
+    .select('*, profiles(display_name,username)')
+    .eq('is_hof', true)
+    .order('vote_count', { ascending: false });
+
+  const list = document.getElementById('hof-list');
+  if (!data || !data.length) { list.innerHTML = `<div class="empty-state"><div class="empty-kanji">✦</div><div class="empty-text">${state.lang==='ja'?'まだ殿堂入りはありません':'No Hall of Fame entries yet'}</div></div>`; return; }
+  list.innerHTML = data.map(p => {
+    const creator = p.profiles?.display_name || p.profiles?.username || '—';
+    return `<div class="hof-card fade-up">
+      <div class="hof-badge">👑 ${esc(t().hofRevived)}</div>
+      <div class="hof-title">${esc(p.title)}</div>
+      <div style="font-size:12px;color:var(--ash);letter-spacing:.04em">${esc(creator)}</div>
+      <div class="hof-story">${esc(p.full_desc)}</div>
+      <div class="hof-votes"><div class="hof-votes-num">${p.vote_count}</div><div class="hof-votes-label">${state.lang==='ja'?'票の支持':'votes of support'}</div></div>
+    </div>`;
+  }).join('');
+}
+
+/* ── Vote ───────────────────────────────────────────────────── */
+async function castVote(postId) {
+  if (state.voted.has(postId)) {
+    // Remove vote
+    const { error } = await sb.from('votes').delete().eq('post_id', postId).eq('user_id', state.user?.id ?? 'anon');
+    if (error && error.code !== 'PGRST116') { showToast(t().toastError,'error'); return; }
+    state.voted.delete(postId);
+    updateVoteDOM(postId, -1, false);
+    showToast(t().toastUnvoted, 'error');
+  } else {
+    // Need user_id: allow anonymous vote only tracked in localStorage
+    if (!state.user) {
+      // localStorage-based anon voting
+      const anonVoted = new Set(JSON.parse(localStorage.getItem('kuyo_anon_votes')||'[]'));
+      if (anonVoted.has(postId)) { showToast(t().toastUnvoted,'error'); anonVoted.delete(postId); updateVoteDOM(postId,-1,false); }
+      else { anonVoted.add(postId); updateVoteDOM(postId,1,true); showToast(t().toastVoted); spawnParticles(postId); }
+      localStorage.setItem('kuyo_anon_votes', JSON.stringify([...anonVoted]));
+      return;
+    }
+    const { error } = await sb.from('votes').insert({ post_id: postId, user_id: state.user.id });
+    if (error) { showToast(t().toastError,'error'); return; }
+    state.voted.add(postId);
+    updateVoteDOM(postId, 1, true);
+    showToast(t().toastVoted);
+    spawnParticles(postId);
+  }
+  // Refresh sidebar ranking
+  renderRankingSidebar();
+}
+
+function updateVoteDOM(postId, delta, isVoted) {
+  const vn = document.getElementById(`vn-${postId}`);
+  if (vn) { vn.textContent = Math.max(0, parseInt(vn.textContent||0) + delta); }
+  const vl = document.getElementById(`vl-${postId}`);
+  if (vl) vl.textContent = isVoted ? t().voted : t().revive;
+  const btn = vn?.closest('.vote-btn');
+  if (btn) btn.classList.toggle('voted', isVoted);
+  // modal
+  const mvn = document.getElementById('modal-vote-num');
+  if (mvn) { mvn.textContent = Math.max(0, parseInt(mvn.textContent||0) + delta); }
+  const mvb = document.getElementById('modal-vote-btn');
+  if (mvb) { mvb.classList.toggle('voted', isVoted); const lbl = mvb.querySelector('.mvb-label'); if(lbl) lbl.textContent = isVoted?t().voted:t().revive; }
+}
+
+function spawnParticles(id) {
+  const card = document.querySelector(`[data-id="${id}"]`);
+  const btn  = card?.querySelector('.vote-btn');
+  if (!btn) return;
+  const r = btn.getBoundingClientRect();
+  for (let i = 0; i < 8; i++) {
+    const s = document.createElement('div');
+    const a = (i/8)*Math.PI*2;
+    s.style.cssText = `position:fixed;left:${r.left+r.width/2}px;top:${r.top+r.height/2}px;width:4px;height:4px;background:${i%2?'var(--gold)':'var(--ember)'};border-radius:50%;pointer-events:none;z-index:9000;transform:translate(-50%,-50%);transition:transform .6s cubic-bezier(.2,1,.3,1),opacity .6s ease;`;
+    document.body.appendChild(s);
+    requestAnimationFrame(()=>{s.style.transform=`translate(calc(-50% + ${Math.cos(a)*44}px),calc(-50% + ${Math.sin(a)*44-20}px)) scale(0)`;s.style.opacity='0';});
+    setTimeout(()=>s.remove(),700);
+  }
+}
+
+/* ── Modal ──────────────────────────────────────────────────── */
+async function openModal(postId) {
+  // Fetch full post
+  const { data: post } = await sb.from('posts')
+    .select('*, profiles(display_name,username,avatar_url)')
+    .eq('id', postId)
+    .single();
+  if (!post) return;
+
+  const { data: comments } = await sb.from('comments')
+    .select('*, profiles(display_name,username,avatar_url)')
+    .eq('post_id', postId)
+    .order('created_at', { ascending: true });
+
+  const voted   = state.voted.has(postId) || new Set(JSON.parse(localStorage.getItem('kuyo_anon_votes')||'[]')).has(postId);
+  const creator = post.profiles?.display_name || post.profiles?.username || '—';
+  const initials = (creator[0] || '匿');
+
+  document.getElementById('modal-body').innerHTML = `
+    <div class="card-badge" style="margin-bottom:16px"><div class="badge-dot ${esc(post.category)}"></div>${esc(catLabel(post.category))}</div>
+    <div class="modal-title">${esc(post.title)}</div>
+    <div class="modal-creator-row">
+      <div class="avatar avatar-md" style="background:linear-gradient(135deg,var(--ember),var(--gold))">${esc(initials)}</div>
+      <div>
+        <div style="font-size:13px;color:var(--paper);letter-spacing:.05em">${esc(creator)}</div>
+        <div class="modal-meta">${new Date(post.created_at).toLocaleDateString('ja-JP').replace(/\//g,'.')}${post.reason?` · ${state.lang==='ja'?'理由：':'Reason: '}${esc(post.reason)}`:''}</div>
+      </div>
+    </div>
+    <div class="modal-thumb">${post.image_url?`<img src="${esc(post.image_url)}" alt="${esc(post.title)}">`:'没'}</div>
+    <div class="modal-desc">${esc(post.full_desc)}</div>
+    <div class="modal-tags">${(post.tags||[]).map(tg=>`<span class="modal-tag">#${esc(tg)}</span>`).join('')}</div>
+    <div class="modal-vote-area">
+      <div class="modal-vote-text">${t().modalVoteText.replace('\n','<br>')}</div>
+      <button class="modal-vote-btn ${voted?'voted':''}" id="modal-vote-btn" onclick="castVote('${esc(postId)}')">
+        🕯 <span class="mvb-label">${voted?esc(t().voted):esc(t().revive)}</span>
+        <span class="modal-vote-count"> <strong id="modal-vote-num">${post.vote_count}</strong></span>
+      </button>
+    </div>
+    <div class="comments-section">
+      <div class="comments-title">${t().commentsTitle((comments||[]).length)}</div>
+      <div id="modal-comments-list">
+        ${(comments||[]).map(c=>{
+          const cn = c.profiles?.display_name||c.profiles?.username||'匿名';
+          const ci = cn[0]||'匿';
+          return `<div class="comment-item">
+            <div class="comment-head">
+              <div class="avatar avatar-sm" style="background:linear-gradient(135deg,#7a9cc4,#9c7ac4)">${esc(ci)}</div>
+              <div class="comment-author-name">${esc(cn)}</div>
+              <div class="comment-time">${relTime(c.created_at)}</div>
+            </div>
+            <div class="comment-text">${esc(c.body)}</div>
+          </div>`;
+        }).join('')}
+      </div>
+      <div class="comment-input-wrap">
+        <input type="text" class="comment-input" id="modal-comment-input"
+          placeholder="${esc(t().commentPlaceholder)}"
+          onkeydown="if(event.key==='Enter')submitComment('${esc(postId)}')">
+        <button class="comment-send" onclick="submitComment('${esc(postId)}')">${esc(t().commentSend)}</button>
+      </div>
+    </div>`;
+
+  document.getElementById('modal-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+async function submitComment(postId) {
+  const inp  = document.getElementById('modal-comment-input');
+  const body = inp.value.trim();
+  if (!body) return;
+
+  const userId = state.user?.id ?? null;
+  const { error } = await sb.from('comments').insert({ post_id: postId, user_id: userId, body });
+  if (error) { showToast(t().toastError,'error'); return; }
+
+  const displayName = state.user ? (state.user.user_metadata.full_name || state.user.user_metadata.user_name || '名無し') : (state.lang==='ja'?'名無しのファン':'Anonymous Fan');
+  const initials = displayName[0] || '匿';
+  const list = document.getElementById('modal-comments-list');
+  const div = document.createElement('div');
+  div.className = 'comment-item fade-up';
+  div.innerHTML = `<div class="comment-head"><div class="avatar avatar-sm" style="background:linear-gradient(135deg,#c44a2a,#c9975a)">${esc(initials)}</div><div class="comment-author-name">${esc(displayName)}</div><div class="comment-time">${relTime(new Date().toISOString())}</div></div><div class="comment-text">${esc(body)}</div>`;
+  list.appendChild(div);
+  inp.value = '';
+
+  const ct = document.querySelector('.comments-title');
+  if (ct) ct.textContent = t().commentsTitle(list.children.length);
+  showToast(t().toastCommented);
+}
+
+/* ── Section routing ────────────────────────────────────────── */
+function showSection(name) {
+  state.section = name;
+  ['archive','ranking','post','hof'].forEach(s => {
+    const el = document.getElementById(`section-${s}`);
+    if (el) el.style.display = s===name?'block':'none';
+  });
+  document.querySelectorAll('.nav-btn').forEach((b,i) => {
+    b.classList.toggle('active', i === {archive:0,ranking:1,post:2,hof:3}[name]);
+  });
+  if (name==='ranking') renderRankingPage();
+  if (name==='hof')     renderHof();
+  if (name==='post')    showPostSection();
+  window.scrollTo(0,0);
+}
+
+function showPostSection() {
+  const gate    = document.getElementById('auth-gate');
+  const formWrap = document.getElementById('post-form-wrap');
+  if (state.user) {
+    gate.style.display     = 'none';
+    formWrap.style.display = 'block';
+    resetForm();
+  } else {
+    gate.style.display     = 'block';
+    formWrap.style.display = 'none';
+  }
+}
+
+/* ── Search & filter ────────────────────────────────────────── */
+function initSearch() {
+  const inp = document.getElementById('search-input');
+  const clr = document.getElementById('search-clear');
+  let timer;
+  inp.addEventListener('input', () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      state.query = inp.value.trim();
+      clr.classList.toggle('visible', !!state.query);
+      fetchPosts();
+    }, 350);
+  });
+  clr.addEventListener('click', () => { inp.value=''; state.query=''; clr.classList.remove('visible'); fetchPosts(); inp.focus(); });
+}
+
+function setFilter(el, cat) {
+  state.filter = cat;
+  document.querySelectorAll('.filter-chip').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  fetchPosts();
+}
+
+function setSort(el, sort) {
+  state.sort = sort;
+  document.querySelectorAll('.sort-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  fetchPosts();
+}
+
+/* ── Post form ──────────────────────────────────────────────── */
+function resetForm() {
+  state.formStep = 1; state.tags = []; state.uploadFile = null;
+  state.formData = { title:'', category:'design', reason:'', description:'' };
+  document.getElementById('submit-success').classList.remove('visible');
+  document.getElementById('form-main').style.display = 'block';
+  const ta = document.getElementById('f-desc'); if(ta) ta.value='';
+  const ti = document.getElementById('f-title'); if(ti) ti.value='';
+  const rs = document.getElementById('f-reason'); if(rs) rs.value='';
+  const pr = document.getElementById('upload-preview'); if(pr){pr.classList.remove('visible');pr.src='';}
+  const fn = document.getElementById('upload-filename'); if(fn) fn.classList.remove('visible');
+  const uz = document.getElementById('upload-zone'); if(uz) uz.classList.remove('has-file');
+  renderTagPills();
+  updateFormStep();
+}
+
+function updateFormStep() {
+  document.querySelectorAll('.progress-step').forEach((el,i)=>{el.classList.toggle('active',i+1===state.formStep);el.classList.toggle('done',i+1<state.formStep);});
+  document.querySelectorAll('.form-panel').forEach((el,i)=>el.classList.toggle('active',i+1===state.formStep));
+  const prev = document.querySelector('#form-step-'+state.formStep+' .btn-prev'); if(prev) prev.style.display=state.formStep>1?'block':'none';
+  if (state.formStep===3) fillSummary();
+}
+
+function fillSummary() {
+  const catMap={design:t().catDesign,outfit:t().catOutfit,name:t().catName,lore:t().catLore,bgm:t().catBgm,other:t().catOther};
+  document.getElementById('summary-title-val').textContent  = state.formData.title;
+  document.getElementById('summary-cat-val').textContent    = catMap[state.formData.category]||state.formData.category;
+  document.getElementById('summary-reason-val').textContent = state.formData.reason||'—';
+  document.getElementById('summary-desc-val').textContent   = state.formData.description.slice(0,120)+(state.formData.description.length>120?'…':'');
+  document.getElementById('summary-tags-val').textContent   = state.tags.length?state.tags.map(tg=>'#'+tg).join(' '):'—';
+}
+
+function nextStep() {
+  if (state.formStep===1) {
+    const title = document.getElementById('f-title').value.trim();
+    if (!title) { showFieldError('f-title','f-title-err',t().titleRequired); return; }
+    clearFieldError('f-title','f-title-err');
+    state.formData.title    = title;
+    state.formData.category = document.querySelector('.cat-radio:checked')?.value||'design';
+  }
+  if (state.formStep===2) {
+    const desc = document.getElementById('f-desc').value.trim();
+    if (desc.length<10) { showFieldError('f-desc','f-desc-err',t().descRequired); return; }
+    clearFieldError('f-desc','f-desc-err');
+    state.formData.description = desc;
+    state.formData.reason      = document.getElementById('f-reason').value;
+  }
+  state.formStep = Math.min(state.formStep+1,3);
+  updateFormStep();
+}
+function prevStep() { state.formStep = Math.max(state.formStep-1,1); updateFormStep(); }
+function showFieldError(fid,eid,msg){const f=document.getElementById(fid);const e=document.getElementById(eid);if(f)f.classList.add('error');if(e){e.textContent=msg;e.classList.add('visible');}}
+function clearFieldError(fid,eid){const f=document.getElementById(fid);const e=document.getElementById(eid);if(f)f.classList.remove('error');if(e)e.classList.remove('visible');}
+
+async function submitForm() {
+  if (!state.user) return;
+  const btn = document.getElementById('btn-submit');
+  btn.classList.add('loading');
+
+  let imageUrl = null;
+
+  // 1. Upload image if any
+  if (state.uploadFile) {
+    showToast(t().toastUploading);
+    const ext  = state.uploadFile.name.split('.').pop();
+    const path = `${state.user.id}/${Date.now()}.${ext}`;
+    const { data: uploadData, error: uploadErr } = await sb.storage
+      .from('post-images').upload(path, state.uploadFile, { cacheControl:'3600', upsert:false });
+    if (uploadErr) { showToast(t().toastError,'error'); btn.classList.remove('loading'); return; }
+    const { data: { publicUrl } } = sb.storage.from('post-images').getPublicUrl(path);
+    imageUrl = publicUrl;
+  }
+
+  // 2. Insert post
+  const { error } = await sb.from('posts').insert({
+    user_id:     state.user.id,
+    title:       state.formData.title,
+    category:    state.formData.category,
+    reason:      state.formData.reason || null,
+    description: state.formData.description.slice(0,400),
+    full_desc:   state.formData.description,
+    tags:        state.tags,
+    image_url:   imageUrl,
+  });
+
+  btn.classList.remove('loading');
+  if (error) { showToast(t().toastError,'error'); return; }
+
+  document.getElementById('form-main').style.display = 'none';
+  document.getElementById('submit-success').classList.add('visible');
+  showToast(t().toastSubmitted);
+  fetchPosts(); // refresh archive
+}
+
+/* ── Tags ───────────────────────────────────────────────────── */
+function initTagsInput() {
+  const wrap=document.getElementById('tags-wrap'); const inp=document.getElementById('tags-input'); if(!wrap||!inp) return;
+  wrap.addEventListener('click',()=>inp.focus());
+  inp.addEventListener('keydown',e=>{
+    if(e.key==='Enter'||e.key===' '||e.key==='　'){e.preventDefault();addTag(inp.value.replace(/\s+/g,''));inp.value='';}
+    else if(e.key==='Backspace'&&!inp.value&&state.tags.length) removeTag(state.tags[state.tags.length-1]);
+  });
+}
+function addTag(val){val=val.trim().replace(/^#/,'');if(!val||state.tags.includes(val)||state.tags.length>=8)return;state.tags.push(val);renderTagPills();}
+function removeTag(val){state.tags=state.tags.filter(t=>t!==val);renderTagPills();}
+function renderTagPills(){
+  const wrap=document.getElementById('tags-wrap');const inp=document.getElementById('tags-input');if(!wrap)return;
+  wrap.querySelectorAll('.tag-pill').forEach(p=>p.remove());
+  state.tags.forEach(tg=>{const pill=document.createElement('span');pill.className='tag-pill';pill.innerHTML=`${esc(tg)}<button class="tag-remove" onclick="removeTag('${esc(tg)}')" type="button">×</button>`;wrap.insertBefore(pill,inp);});
+}
+
+/* ── File upload ────────────────────────────────────────────── */
+function initUpload() {
+  const zone=document.getElementById('upload-zone');const input=document.getElementById('f-image');
+  const prev=document.getElementById('upload-preview');const fname=document.getElementById('upload-filename');
+  if(!zone)return;
+  zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('drag-over');});
+  zone.addEventListener('dragleave',()=>zone.classList.remove('drag-over'));
+  zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('drag-over');handleFile(e.dataTransfer.files[0]);});
+  zone.addEventListener('click',()=>input.click());
+  input.addEventListener('change',()=>handleFile(input.files[0]));
+  function handleFile(file){
+    if(!file||!file.type.startsWith('image/'))return;
+    if(file.size>10*1024*1024){showToast(state.lang==='ja'?'ファイルが大きすぎます (10MB以下)':'File too large (max 10MB)','error');return;}
+    state.uploadFile=file;
+    const r=new FileReader();r.onload=e=>{prev.src=e.target.result;prev.classList.add('visible');fname.textContent=file.name;fname.classList.add('visible');zone.classList.add('has-file');};r.readAsDataURL(file);
+  }
+}
+
+/* ── Char counter ───────────────────────────────────────────── */
+function initCharCounter() {
+  const ta=document.getElementById('f-desc');const ctr=document.getElementById('char-counter');if(!ta||!ctr)return;
+  ta.addEventListener('input',()=>{const n=ta.value.length;const max=2000;ctr.textContent=`${n} / ${max}`;ctr.classList.toggle('warn',n>max*.9);if(n>max)ta.value=ta.value.slice(0,max);});
+}
+
+/* ── Language ───────────────────────────────────────────────── */
+function setLang(lang) {
+  state.lang=lang;
+  document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active',b.dataset.lang===lang));
+  document.documentElement.lang=lang;
+  applyLangTexts();
+  renderCards(); renderRankingSidebar();
+  if(state.section==='ranking')renderRankingPage();
+  if(state.section==='hof')renderHof();
+  document.getElementById('site-tagline').innerHTML=t().tagline.replace('\n','<br>');
+  const rs=document.getElementById('f-reason');
+  if(rs){const v=rs.value;rs.innerHTML=`<option value="">${lang==='ja'?'選択してください':'Please select'}</option>`+t().reasons.map(r=>`<option${r===v?' selected':''}>${esc(r)}</option>`).join('');}
+}
+function applyLangTexts(){
+  document.querySelectorAll('[data-t]').forEach(el=>{const k=el.dataset.t;const v=t()[k];if(typeof v==='string')el.textContent=v;});
+  document.querySelectorAll('[data-t-placeholder]').forEach(el=>{const k=el.dataset.tPlaceholder;const v=t()[k];if(typeof v==='string')el.placeholder=v;});
+}
+
+/* ── Email subscription ─────────────────────────────────────── */
+function subscribeEmail(){
+  const inp=document.getElementById('email-input');const val=inp.value.trim();
+  if(!val||!val.includes('@')){showToast(state.lang==='ja'?'正しいメールアドレスを入力してください':'Enter a valid email','error');return;}
+  inp.value=''; showToast(t().toastEmail);
+  // TODO: insert into subscribers table in Supabase
+}
+
+/* ── Realtime subscriptions ─────────────────────────────────── */
+function initRealtime() {
+  sb.channel('posts-changes')
+    .on('postgres_changes', { event:'INSERT', schema:'public', table:'posts' }, () => {
+      if (state.section==='archive') fetchPosts();
+      renderRankingSidebar();
+    })
+    .on('postgres_changes', { event:'UPDATE', schema:'public', table:'posts' }, payload => {
+      // Update vote count on card without full re-render
+      const id = payload.new.id;
+      const vn = document.getElementById(`vn-${id}`);
+      if (vn) vn.textContent = payload.new.vote_count;
+    })
+    .subscribe();
+}
+
+/* ── Keyboard ───────────────────────────────────────────────── */
+document.addEventListener('keydown', e=>{if(e.key==='Escape')closeModal();});
+document.getElementById('modal-overlay').addEventListener('click', e=>{if(e.target===e.currentTarget)closeModal();});
+
+/* ── Init ───────────────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', async () => {
+  initParticles();
+  initSearch();
+  initTagsInput();
+  initUpload();
+  initCharCounter();
+  applyLangTexts();
+  await initAuth();
+  await loadVotedPosts();
+  await fetchPosts();
+  initRealtime();
+  showSection('archive');
+});
+</script>
+</body>
+</html>
