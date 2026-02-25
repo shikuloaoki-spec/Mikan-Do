@@ -832,7 +832,7 @@ function onAuthChange(user) {
 async function loginWithTwitter() {
   const { error } = await sb.auth.signInWithOAuth({
     provider: 'twitter',
-    options: { redirectTo: location.href }
+    options: { redirectTo: window.location.origin + window.location.pathname }
   });
   if (error) showToast(t().toastError, 'error');
 }
