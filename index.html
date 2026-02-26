@@ -885,9 +885,13 @@ async function loginWithGoogle() {
     );
     return;
   }
+
+  // リダイレクト先を明示的に指定（動的生成だとGitHub Pagesで不一致が起きやすい）
+  const redirectTo = 'https://shikuloaoki-spec.github.io/Mikan-Do/';
+
   const { error } = await sb.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: window.location.origin + window.location.pathname }
+    options: { redirectTo }
   });
   if (error) showToast(t().toastError, 'error');
 }
