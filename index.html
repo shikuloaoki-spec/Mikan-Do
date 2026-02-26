@@ -836,18 +836,21 @@ function initParticles() {
 
 /* ── Auth ───────────────────────────────────────────────────── */
 async function initAuth() {
-  // [FIX] Promiseで解決してから呼び出し元に返す（loadVotedPostsとの競合防止）
-  return new Promise(async (resolve) => {
-    const { data: { session } } = await sb.auth.getSession();
-    onAuthChange(session?.user ?? null);
-    if (session?.user) await loadVotedPosts();
-    resolve();
+  // リダイレクト戻り時にURLのハッシュ/クエリからセッションを取得
+  const { data: { session } } = await sb.auth.getSession();
+  onAuthChange(session?.user ?? null);
+  if (session?.user) await loadVotedPosts();
 
-    sb.auth.onAuthStateChange(async (_event, session) => {
-      onAuthChange(session?.user ?? null);
-      if (session?.user) await loadVotedPosts();
-      else { state.voted.clear(); renderCards(); }
-    });
+  // 認証状態変化を監視（ログイン・ログアウト・リダイレクト戻り全て捕捉）
+  sb.auth.onAuthStateChange(async (event, session) => {
+    onAuthChange(session?.user ?? null);
+    if (session?.user) {
+      await loadVotedPosts();
+      renderCards(); // 投票状態を反映して再描画
+    } else {
+      state.voted.clear();
+      renderCards();
+    }
   });
 }
 
