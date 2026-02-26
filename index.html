@@ -213,11 +213,11 @@ body::before{content:'';position:fixed;top:0;right:0;bottom:0;left:0;background-
 .auth-gate-icon{font-size:48px;margin-bottom:20px;opacity:.35}
 .auth-gate-title{font-family:var(--font-jp);font-size:22px;color:var(--paper);letter-spacing:.2em;margin-bottom:12px}
 .auth-gate-text{font-size:13px;color:var(--ash);line-height:2;margin-bottom:28px}
-.twitter-login-btn{display:inline-flex;align-items:center;gap:10px;background:none;border:1px solid var(--gold);color:var(--gold);font-family:var(--font-jp);font-size:14px;letter-spacing:.18em;padding:14px 32px;transition:all var(--tr);position:relative;overflow:hidden}
-.twitter-login-btn::before{content:'';position:absolute;top:0;right:0;bottom:0;left:0;background:var(--gold);transform:translateX(-100%);transition:transform .38s ease;z-index:0}
-.twitter-login-btn:hover::before{transform:translateX(0)}
-.twitter-login-btn:hover{color:var(--ink)}
-.twitter-login-btn span{position:relative;z-index:1}
+.google-login-btn{display:inline-flex;align-items:center;gap:10px;background:none;border:1px solid var(--gold);color:var(--gold);font-family:var(--font-jp);font-size:14px;letter-spacing:.18em;padding:14px 32px;transition:all var(--tr);position:relative;overflow:hidden}
+.google-login-btn::before{content:'';position:absolute;top:0;right:0;bottom:0;left:0;background:var(--gold);transform:translateX(-100%);transition:transform .38s ease;z-index:0}
+.google-login-btn:hover::before{transform:translateX(0)}
+.google-login-btn:hover{color:var(--ink)}
+.google-login-btn span{position:relative;z-index:1}
 .form-intro{text-align:center;margin-bottom:44px;padding-bottom:36px;border-bottom:1px solid var(--border)}
 .form-intro-title{font-family:var(--font-jp);font-size:26px;color:var(--paper);letter-spacing:.22em;margin-bottom:12px}
 .form-intro-text{font-size:13px;color:var(--ash);line-height:2.1;letter-spacing:.05em;font-weight:300}
@@ -405,8 +405,9 @@ footer{border-top:1px solid rgba(201,151,90,.12);padding:36px 20px;text-align:ce
 <div id="auth-bar">
   <div id="auth-loading" style="display:none"><div class="auth-skeleton"></div></div>
   <div id="auth-logged-out">
-    <button class="auth-btn" onclick="loginWithTwitter()">
-      <span>𝕏</span> <span data-t="loginBtn">X（Twitter）でログイン</span>
+    <button class="auth-btn" onclick="loginWithGoogle()">
+      <svg width="14" height="14" viewBox="0 0 18 18" style="flex-shrink:0"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/><path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
+      <span data-t="loginBtn">Googleでログイン</span>
     </button>
   </div>
   <div id="auth-logged-in" style="display:none;align-items:center;gap:10px">
@@ -529,9 +530,10 @@ footer{border-top:1px solid rgba(201,151,90,.12);padding:36px 20px;text-align:ce
       <div class="auth-gate" id="auth-gate">
         <div class="auth-gate-icon">🕯</div>
         <div class="auth-gate-title" data-t="authGateTitle">ログインが必要です</div>
-        <div class="auth-gate-text" data-t="authGateText">設定を供養するには、X（Twitter）でのログインが必要です。<br>ファンとしての投票・コメントはログイン不要で行えます。</div>
-        <button class="twitter-login-btn" onclick="loginWithTwitter()">
-          <span>𝕏 でログインして供養する</span>
+        <div class="auth-gate-text" data-t="authGateText">設定を供養するには、Googleアカウントでのログインが必要です。<br>ファンとしての投票・コメントはログイン不要で行えます。</div>
+        <button class="google-login-btn" onclick="loginWithGoogle()">
+          <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/><path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
+          <span>Googleアカウントでログインして供養する</span>
         </button>
       </div>
 
@@ -678,8 +680,8 @@ footer{border-top:1px solid rgba(201,151,90,.12);padding:36px 20px;text-align:ce
 'use strict';
 
 /* ── Supabase config ────────────────────────────────────────── */
-const SUPABASE_URL      = 'https://hgxvgxjngddyjnwdlanq.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_nCeYKls8EqFiIx1NZz64fA_yXIEvO4Z';
+const SUPABASE_URL      = '__SUPABASE_URL__';
+const SUPABASE_ANON_KEY = '__SUPABASE_ANON_KEY__';
 
 // Supabaseが未設定の場合でもJSがクラッシュしないようにする
 const SUPABASE_READY = SUPABASE_URL !== '__SUPABASE_URL__' && SUPABASE_URL.startsWith('https://');
@@ -734,8 +736,8 @@ const state = {
 const T = {
   ja:{
     siteTitle:'みかん堂',tagline:'没になったキャラクター設定たちの、安らかな眠りを。\nファンの声があれば、いつかまた目覚めるかもしれない。',
-    loginBtn:'X（Twitter）でログイン',logoutBtn:'ログアウト',
-    authGateTitle:'ログインが必要です',authGateText:'設定を供養するには、X（Twitter）でのログインが必要です。\nファンとしての投票・コメントはログイン不要で行えます。',
+    loginBtn:'Googleでログイン',logoutBtn:'ログアウト',
+    authGateTitle:'ログインが必要です',authGateText:'設定を供養するには、Googleアカウントでのログインが必要です。\nファンとしての投票・コメントはログイン不要で行えます。',
     statPosts:'供養された設定',statVotes:'復活投票数',statCreators:'参加クリエイター',statHof:'殿堂入り復活済み',
     navArchive:'📜 アーカイブ',navRanking:'🔥 復活ランキング',navPost:'🕯 設定を供養する',navHof:'👑 殿堂入り',
     filterAll:'すべて',filterDesign:'キャラ設定',filterOutfit:'衣装案',filterName:'キャラ名',filterLore:'世界観・設定',filterBgm:'BGM案',
@@ -754,7 +756,7 @@ const T = {
     modalVoteText:'この設定の復活を望みますか？\nあなたの一票がクリエイターへの声になります。',
     commentsTitle:(n)=>`ファンのコメント (${n})`,
     commentPlaceholder:'「もし復活したら〇〇したい」など…',commentSend:'送る',
-    commentLoginNotice:'コメントするには <a onclick="loginWithTwitter()">ログイン</a> してください',
+    commentLoginNotice:'コメントするには <a onclick="loginWithGoogle()">ログイン</a> してください',
     rankingTitle:'今週の復活候補',rankingPageTitle:'復活ランキング',rankingHeroText:'票を集めた設定が、クリエイターの目に届く。',
     hofTitle:'殿堂入り',hofSubtitle:'Fan voices brought them back to life.',hofRevived:'復活済み',
     weeklyTitle:'📅 週次レポート',weeklyDesc:'今週の注目没設定をメールで受け取ろう',weeklyBtn:'登録',weeklyPlaceholder:'your@email.com',
@@ -766,8 +768,8 @@ const T = {
   },
   en:{
     siteTitle:'Mikan Do',tagline:'A resting place for discarded character concepts.\nWith enough love from fans, they may yet awaken.',
-    loginBtn:'Sign in with X (Twitter)',logoutBtn:'Sign out',
-    authGateTitle:'Login required',authGateText:'Signing in with X (Twitter) is required to submit a concept.\nVoting and commenting are available without logging in.',
+    loginBtn:'Sign in with Google',logoutBtn:'Sign out',
+    authGateTitle:'Login required',authGateText:'Signing in with Google is required to submit a concept.\nVoting and commenting are available without logging in.',
     statPosts:'Archived Concepts',statVotes:'Revival Votes',statCreators:'Creators',statHof:'Revived',
     navArchive:'📜 Archive',navRanking:'🔥 Revival Ranking',navPost:'🕯 Submit a Concept',navHof:'👑 Hall of Fame',
     filterAll:'All',filterDesign:'Concept',filterOutfit:'Outfit',filterName:'Name',filterLore:'Lore',filterBgm:'BGM',
@@ -786,7 +788,7 @@ const T = {
     modalVoteText:'Want this concept to be revived?\nYour vote sends a message to the creator.',
     commentsTitle:(n)=>`Fan Comments (${n})`,
     commentPlaceholder:'"I\'d love to see this revived for…"',commentSend:'Post',
-    commentLoginNotice:'<a onclick="loginWithTwitter()">Sign in</a> to leave a comment',
+    commentLoginNotice:'<a onclick="loginWithGoogle()">Sign in</a> to leave a comment',
     rankingTitle:'This Week\'s Top',rankingPageTitle:'Revival Ranking',rankingHeroText:'The most-voted concepts are seen by creators.',
     hofTitle:'Hall of Fame',hofSubtitle:'Fan voices brought them back to life.',hofRevived:'Revived',
     weeklyTitle:'📅 Weekly Report',weeklyDesc:'Get top concepts in your inbox weekly',weeklyBtn:'Join',weeklyPlaceholder:'your@email.com',
@@ -870,7 +872,7 @@ function onAuthChange(user) {
   if (state.section === 'post') showPostSection();
 }
 
-async function loginWithTwitter() {
+async function loginWithGoogle() {
   if (!SUPABASE_READY) {
     showToast(
       state.lang === 'ja'
@@ -881,7 +883,7 @@ async function loginWithTwitter() {
     return;
   }
   const { error } = await sb.auth.signInWithOAuth({
-    provider: 'twitter',
+    provider: 'google',
     options: { redirectTo: window.location.origin + window.location.pathname }
   });
   if (error) showToast(t().toastError, 'error');
