@@ -403,8 +403,8 @@ footer{border-top:1px solid rgba(201,151,90,.12);padding:36px 20px;text-align:ce
 
 <!-- ── AUTH BAR ─────────────────────────────────────────────── -->
 <div id="auth-bar">
-  <div id="auth-loading"><div class="auth-skeleton"></div></div>
-  <div id="auth-logged-out" style="display:none">
+  <div id="auth-loading" style="display:none"><div class="auth-skeleton"></div></div>
+  <div id="auth-logged-out">
     <button class="auth-btn" onclick="loginWithTwitter()">
       <span>𝕏</span> <span data-t="loginBtn">X（Twitter）でログイン</span>
     </button>
@@ -680,7 +680,36 @@ footer{border-top:1px solid rgba(201,151,90,.12);padding:36px 20px;text-align:ce
 /* ── Supabase config ────────────────────────────────────────── */
 const SUPABASE_URL      = '__SUPABASE_URL__';
 const SUPABASE_ANON_KEY = '__SUPABASE_ANON_KEY__';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Supabaseが未設定の場合でもJSがクラッシュしないようにする
+const SUPABASE_READY = SUPABASE_URL !== '__SUPABASE_URL__' && SUPABASE_URL.startsWith('https://');
+
+// ダミークライアント（未設定時に各呼び出しがエラーにならないようにする）
+const _dummyResult = { data: null, error: { message: 'Supabase not configured' }, count: 0 };
+const _dummyQuery  = new Proxy({}, { get: () => () => Promise.resolve(_dummyResult) });
+const _dummyAuth   = {
+  getSession:      () => Promise.resolve({ data: { session: null } }),
+  onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+  signInWithOAuth: () => Promise.resolve({}),
+  signOut:         () => Promise.resolve({}),
+};
+const _dummySb = {
+  auth:    _dummyAuth,
+  from:    () => _dummyQuery,
+  channel: () => ({ on: function(){ return this; }, subscribe: () => {} }),
+  removeChannel: () => {},
+  storage: { from: () => ({ upload: () => Promise.resolve(_dummyResult), getPublicUrl: () => ({ data: { publicUrl: '' } }) }) },
+};
+
+let sb;
+try {
+  sb = SUPABASE_READY
+    ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+    : _dummySb;
+} catch(e) {
+  console.warn('Supabase init failed:', e.message);
+  sb = _dummySb;
+}
 
 /* ── State ──────────────────────────────────────────────────── */
 const state = {
@@ -828,8 +857,9 @@ function onAuthChange(user) {
 
   loading.style.display = 'none';
   if (user) {
-    const meta = user.user_metadata;
-    document.getElementById('auth-avatar').src = meta.avatar_url || '';
+    const meta = user.user_metadata || {};
+    const avatar = document.getElementById('auth-avatar');
+    if (meta.avatar_url) avatar.src = meta.avatar_url;
     document.getElementById('auth-display-name').textContent = meta.full_name || meta.user_name || '';
     loggedIn.style.display  = 'flex';
     loggedOut.style.display = 'none';
@@ -841,6 +871,15 @@ function onAuthChange(user) {
 }
 
 async function loginWithTwitter() {
+  if (!SUPABASE_READY) {
+    showToast(
+      state.lang === 'ja'
+        ? 'Supabaseが設定されていません。index.htmlにURLとキーを入力してください。'
+        : 'Supabase is not configured. Please set your URL and anon key in index.html.',
+      'error'
+    );
+    return;
+  }
   const { error } = await sb.auth.signInWithOAuth({
     provider: 'twitter',
     options: { redirectTo: window.location.origin + window.location.pathname }
@@ -867,6 +906,22 @@ async function loadVotedPosts() {
 /* ── Fetch posts ────────────────────────────────────────────── */
 async function fetchPosts() {
   showSkeletons();
+
+  if (!SUPABASE_READY) {
+    // Supabase未設定時は空のアーカイブを表示
+    state.posts = [];
+    document.getElementById('cards-grid').innerHTML = `
+      <div class="empty-state">
+        <div class="empty-kanji">⚙</div>
+        <div class="empty-text" style="font-size:13px;line-height:2">
+          Supabaseが設定されていません<br>
+          <span style="font-size:11px;opacity:.6">index.html の SUPABASE_URL と SUPABASE_ANON_KEY を設定してください</span>
+        </div>
+      </div>`;
+    document.getElementById('results-info').textContent = '';
+    return;
+  }
+
   let q = sb.from('posts')
     .select(`*, profiles(username, display_name, avatar_url)`)
     .eq('is_hof', false);
